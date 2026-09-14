@@ -3,7 +3,7 @@ export const SEPOLIA_CHAIN_ID_HEX = '0xaa36a7';
 export const SEPOLIA_NETWORK_NAME = 'Ethereum Sepolia';
 
 export const DEFAULT_SEPOLIA_RPC =
-  import.meta.env.VITE_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org';
+  import.meta.env.VITE_SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
 
 export const DEFAULT_CONTRACT_ADDRESS =
   import.meta.env.VITE_CERTIFICATE_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000';

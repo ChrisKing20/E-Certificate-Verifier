@@ -33,7 +33,7 @@ export const formatHashToBytes32 = (hexHash: string): string => {
 };
 
 const getProviderAndContract = () => {
-  const rpcUrl = process.env.SEPOLIA_RPC_URL || process.env.VITE_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org';
+  const rpcUrl = process.env.SEPOLIA_RPC_URL || process.env.VITE_SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
   const contractAddress = process.env.CONTRACT_ADDRESS || process.env.VITE_CERTIFICATE_CONTRACT_ADDRESS;
 
   if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
