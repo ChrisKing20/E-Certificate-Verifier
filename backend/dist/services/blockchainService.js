@@ -1,167 +1,167 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyCertificateOnChain = exports.revokeCertificateOnChain = exports.registerCertificateOnChain = exports.fileHashToBytes32 = void 0;
+exports.revokeCertificateOnChain = exports.verifyCertificateOnChain = exports.registerCertificateOnChain = exports.formatHashToBytes32 = void 0;
 const ethers_1 = require("ethers");
-const config_1 = require("../config");
-const CONTRACT_ABI = [
-    'function registerCertificate(string certificateId, bytes32 certificateHash) external',
-    'function verifyCertificate(string certificateId, bytes32 certificateHash) external view returns (bool isRegistered, bool isHashMatched, bool isRevoked, uint256 registeredAt)',
-    'function revokeCertificate(string certificateId, string reason) external',
-    'function getCertificate(string certificateId) external view returns (string id, bytes32 certificateHash, address issuer, uint256 registeredAt, bool revoked, uint256 revokedAt, string revocationReason)',
-    'function isCertificateRegistered(string certificateId) external view returns (bool)',
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+// Contract ABI containing register, verify, revoke, and getCertificate
+const CERTIFICATE_REGISTRY_ABI = [
+    'function registerCertificate(string calldata certificateId, bytes32 certificateHash) external',
+    'function verifyCertificate(string calldata certificateId, bytes32 certificateHash) external view returns (bool isValid, bool isRevoked)',
+    'function revokeCertificate(string calldata certificateId, string calldata reason) external',
+    'function isCertificateRegistered(string calldata certificateId) external view returns (bool)',
+    'function getCertificate(string calldata certificateId) external view returns (string id, bytes32 certificateHash, address issuer, uint256 registeredAt, bool revoked, uint256 revokedAt, string revocationReason)',
+    'event CertificateRegistered(string indexed certificateId, bytes32 indexed certificateHash, address indexed issuer, uint256 registeredAt)',
+    'event CertificateRevoked(string indexed certificateId, bytes32 indexed certificateHash, string reason, uint256 revokedAt)'
 ];
 /**
- * Converts a 64-character SHA-256 hex string to bytes32 format (0x...)
+ * Format SHA-256 hex string to bytes32 hex string
  */
-const fileHashToBytes32 = (hexHash) => {
-    const cleanHex = hexHash.replace(/^0x/, '');
-    if (cleanHex.length !== 64) {
-        // If hash length differs, pad or hash to 32 bytes using keccak256
-        return ethers_1.ethers.keccak256(ethers_1.ethers.toUtf8Bytes(hexHash));
-    }
-    return `0x${cleanHex}`;
+const formatHashToBytes32 = (hexHash) => {
+    const cleanHex = hexHash.replace(/^0x/i, '');
+    return ethers_1.ethers.zeroPadValue('0x' + cleanHex, 32);
 };
-exports.fileHashToBytes32 = fileHashToBytes32;
-/**
- * Get authenticated ethers Contract instance
- */
-const getContractInstance = () => {
-    if (!config_1.config.contractAddress || !config_1.config.blockchainPrivateKey) {
-        return null;
+exports.formatHashToBytes32 = formatHashToBytes32;
+const getProviderAndContract = () => {
+    const rpcUrl = process.env.SEPOLIA_RPC_URL || 'https://rpc.sepolia.org';
+    const privateKey = process.env.BLOCKCHAIN_PRIVATE_KEY;
+    const contractAddress = process.env.CONTRACT_ADDRESS;
+    if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
+        return { error: 'CONTRACT_ADDRESS environment variable is not configured.' };
     }
     try {
-        const provider = new ethers_1.ethers.JsonRpcProvider(config_1.config.sepoliaRpcUrl);
-        const wallet = new ethers_1.ethers.Wallet(config_1.config.blockchainPrivateKey, provider);
-        const contract = new ethers_1.ethers.Contract(config_1.config.contractAddress, CONTRACT_ABI, wallet);
-        return { contract, wallet, provider };
+        const provider = new ethers_1.ethers.JsonRpcProvider(rpcUrl);
+        if (privateKey && privateKey !== '0x0000000000000000000000000000000000000000000000000000000000000001') {
+            const signer = new ethers_1.ethers.Wallet(privateKey, provider);
+            const contract = new ethers_1.ethers.Contract(contractAddress, CERTIFICATE_REGISTRY_ABI, signer);
+            return { provider, signer, contract, contractAddress, network: 'Ethereum Sepolia (11155111)' };
+        }
+        else {
+            const contract = new ethers_1.ethers.Contract(contractAddress, CERTIFICATE_REGISTRY_ABI, provider);
+            return { provider, contract, contractAddress, network: 'Ethereum Sepolia (11155111)' };
+        }
     }
     catch (err) {
-        console.error('Failed to initialize Ethers RPC connection:', err.message);
-        return null;
+        return { error: err.message || 'Failed to initialize blockchain provider.' };
     }
 };
 /**
- * Register certificate SHA-256 fingerprint on Ethereum Sepolia Smart Contract
+ * Register Certificate SHA-256 Hash on Ethereum Sepolia Blockchain
  */
 const registerCertificateOnChain = async (certificateId, fileHashHex) => {
-    const instance = getContractInstance();
-    if (!instance) {
-        return {
-            success: false,
-            status: 'NOT_CONNECTED',
-            error: 'Smart contract address or private key environment variables not configured.',
-        };
-    }
-    try {
-        const { contract } = instance;
-        const bytes32Hash = (0, exports.fileHashToBytes32)(fileHashHex);
-        // Call smart contract registerCertificate function
-        const tx = await contract.registerCertificate(certificateId, bytes32Hash);
-        const receipt = await tx.wait(1); // Wait 1 block confirmation
-        return {
-            success: true,
-            status: 'CONFIRMED',
-            txHash: receipt.hash,
-            contractAddress: config_1.config.contractAddress,
-            registeredAt: new Date(),
-        };
-    }
-    catch (err) {
-        console.error(`Blockchain registration failed for ${certificateId}:`, err.message || err);
+    const conn = getProviderAndContract();
+    if (conn.error || !conn.contract || !conn.signer) {
+        console.log(`[Blockchain Service] Registration skipped or failed: ${conn.error || 'No signer/private key configured.'}`);
         return {
             success: false,
             status: 'FAILED',
-            error: err.reason || err.message || 'Smart contract transaction reverted.',
+            error: conn.error || 'Server private key not configured for Sepolia network execution.',
+        };
+    }
+    try {
+        const bytes32Hash = (0, exports.formatHashToBytes32)(fileHashHex);
+        console.log(`[Blockchain Service] Submitting registerCertificate for ID ${certificateId} to ${conn.contractAddress}...`);
+        const tx = await conn.contract.registerCertificate(certificateId, bytes32Hash);
+        // Wait for 1 block confirmation
+        const receipt = await tx.wait(1);
+        console.log(`[Blockchain Service] Transaction Confirmed: ${receipt.hash}`);
+        return {
+            success: true,
+            status: 'CONFIRMED',
+            transactionHash: receipt.hash,
+            contractAddress: conn.contractAddress,
+            network: conn.network,
+            bytes32Hash: bytes32Hash,
+        };
+    }
+    catch (err) {
+        console.error('[Blockchain Service Error]:', err.message || err);
+        return {
+            success: false,
+            status: 'FAILED',
+            error: err.message || 'Blockchain transaction execution reverted or failed.',
         };
     }
 };
 exports.registerCertificateOnChain = registerCertificateOnChain;
 /**
- * Revoke certificate on Ethereum Sepolia Smart Contract
- */
-const revokeCertificateOnChain = async (certificateId, reason) => {
-    const instance = getContractInstance();
-    if (!instance) {
-        return {
-            success: false,
-            status: 'FAILED',
-            error: 'Smart contract address or private key environment variables not configured.',
-        };
-    }
-    try {
-        const { contract } = instance;
-        const tx = await contract.revokeCertificate(certificateId, reason);
-        const receipt = await tx.wait(1);
-        return {
-            success: true,
-            status: 'REVOKED',
-            txHash: receipt.hash,
-        };
-    }
-    catch (err) {
-        console.error(`Blockchain revocation failed for ${certificateId}:`, err.message || err);
-        return {
-            success: false,
-            status: 'FAILED',
-            error: err.reason || err.message || 'Smart contract revocation transaction reverted.',
-        };
-    }
-};
-exports.revokeCertificateOnChain = revokeCertificateOnChain;
-/**
- * Verify certificate registration metadata against smart contract on-chain state
+ * Verify Certificate against Smart Contract on Ethereum Sepolia
  */
 const verifyCertificateOnChain = async (certificateId, fileHashHex) => {
-    const instance = getContractInstance();
-    if (!instance) {
+    const conn = getProviderAndContract();
+    if (conn.error || !conn.contract) {
         return {
-            success: false,
-            isRegistered: false,
-            isHashMatched: false,
-            isRevoked: false,
-            network: config_1.config.blockchainNetwork,
-            contractAddress: config_1.config.contractAddress || undefined,
+            isRegisteredOnChain: false,
+            isValidOnChain: false,
+            isRevokedOnChain: false,
+            onChainHashMatches: false,
         };
     }
     try {
-        const { contract } = instance;
-        const bytes32Hash = (0, exports.fileHashToBytes32)(fileHashHex);
-        const isReg = await contract.isCertificateRegistered(certificateId);
-        if (!isReg) {
+        const bytes32Hash = (0, exports.formatHashToBytes32)(fileHashHex);
+        const isRegistered = await conn.contract.isCertificateRegistered(certificateId);
+        if (!isRegistered) {
             return {
-                success: true,
-                isRegistered: false,
-                isHashMatched: false,
-                isRevoked: false,
-                network: config_1.config.blockchainNetwork,
-                contractAddress: config_1.config.contractAddress,
+                isRegisteredOnChain: false,
+                isValidOnChain: false,
+                isRevokedOnChain: false,
+                onChainHashMatches: false,
+                contractAddress: conn.contractAddress,
+                network: conn.network,
             };
         }
-        const [id, onChainHash, issuer, registeredAt, revoked, revokedAt, revocationReason] = await contract.getCertificate(certificateId);
-        const isHashMatched = onChainHash.toLowerCase() === bytes32Hash.toLowerCase();
-        const registeredAtDate = new Date(Number(registeredAt) * 1000);
+        const [isValid, isRevoked] = await conn.contract.verifyCertificate(certificateId, bytes32Hash);
+        const certDetails = await conn.contract.getCertificate(certificateId);
         return {
-            success: true,
-            isRegistered: true,
-            isHashMatched,
-            isRevoked: revoked,
-            issuer,
-            registeredAt: registeredAtDate,
-            onChainHash,
-            network: config_1.config.blockchainNetwork,
-            contractAddress: config_1.config.contractAddress,
+            isRegisteredOnChain: true,
+            isValidOnChain: isValid,
+            isRevokedOnChain: isRevoked,
+            onChainHashMatches: certDetails.certificateHash.toLowerCase() === bytes32Hash.toLowerCase(),
+            contractAddress: conn.contractAddress,
+            network: conn.network,
+            onChainHash: certDetails.certificateHash,
         };
     }
     catch (err) {
-        console.error(`Blockchain verify failed for ${certificateId}:`, err.message || err);
+        console.error('[Blockchain Verification Error]:', err.message || err);
         return {
-            success: false,
-            isRegistered: false,
-            isHashMatched: false,
-            isRevoked: false,
-            network: config_1.config.blockchainNetwork,
-            contractAddress: config_1.config.contractAddress,
+            isRegisteredOnChain: false,
+            isValidOnChain: false,
+            isRevokedOnChain: false,
+            onChainHashMatches: false,
         };
     }
 };
 exports.verifyCertificateOnChain = verifyCertificateOnChain;
+/**
+ * Revoke Certificate on Ethereum Sepolia Blockchain
+ */
+const revokeCertificateOnChain = async (certificateId, reason) => {
+    const conn = getProviderAndContract();
+    if (conn.error || !conn.contract || !conn.signer) {
+        return {
+            success: false,
+            error: conn.error || 'No signer wallet configured for on-chain revocation.',
+        };
+    }
+    try {
+        console.log(`[Blockchain Service] Revoking certificate ${certificateId} on-chain...`);
+        const tx = await conn.contract.revokeCertificate(certificateId, reason);
+        const receipt = await tx.wait(1);
+        return {
+            success: true,
+            transactionHash: receipt.hash,
+        };
+    }
+    catch (err) {
+        console.error('[Blockchain Revocation Error]:', err.message || err);
+        return {
+            success: false,
+            error: err.message || 'On-chain revocation failed.',
+        };
+    }
+};
+exports.revokeCertificateOnChain = revokeCertificateOnChain;

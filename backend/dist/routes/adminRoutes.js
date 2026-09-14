@@ -12,8 +12,8 @@ router.use(authMiddleware_1.authMiddleware);
 router.get('/dashboard/stats', adminController_1.handleGetDashboardStats);
 // GET /api/admin/certificates
 router.get('/certificates', certificateController_1.handleGetCertificates);
-// POST /api/admin/certificates/:id/blockchain/register (Retry blockchain registration)
-router.post('/certificates/:id/blockchain/register', adminController_1.handleRetryBlockchainRegistration);
+// POST /api/admin/certificates/:id/blockchain/register
+router.post('/certificates/:id/blockchain/register', adminController_1.handleRetryBlockchainRegister);
 // GET /api/admin/verification-logs
 router.get('/verification-logs', verificationController_1.handleGetVerificationLogs);
 exports.default = router;

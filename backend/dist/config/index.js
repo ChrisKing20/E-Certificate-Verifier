@@ -13,8 +13,4 @@ exports.config = {
     corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     nodeEnv: process.env.NODE_ENV || 'development',
     uploadDir: path_1.default.join(__dirname, '../../uploads'),
-    sepoliaRpcUrl: process.env.SEPOLIA_RPC_URL || 'https://rpc.sepolia.org',
-    blockchainPrivateKey: process.env.BLOCKCHAIN_PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-    contractAddress: process.env.CONTRACT_ADDRESS || '',
-    blockchainNetwork: 'Ethereum Sepolia',
 };

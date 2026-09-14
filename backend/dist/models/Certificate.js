@@ -94,10 +94,6 @@ const certificateSchema = new mongoose_1.Schema({
         type: Date,
         default: null,
     },
-    blockchainRevocationTxId: {
-        type: String,
-        default: null,
-    },
     ipfsHash: {
         type: String,
         default: null,
