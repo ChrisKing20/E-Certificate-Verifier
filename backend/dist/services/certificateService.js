@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.revokeCertificate = exports.getCertificateById = exports.getCertificates = exports.retryBlockchainRegistration = exports.createCertificate = void 0;
+exports.revokeCertificate = exports.getCertificateById = exports.getCertificates = exports.updateCertificateBlockchainMetadata = exports.retryBlockchainRegistration = exports.createCertificate = void 0;
 const Certificate_1 = require("../models/Certificate");
 const hashFile_1 = require("../utils/hashFile");
 const generateCertificateId_1 = require("../utils/generateCertificateId");
 const qrService_1 = require("./qrService");
-const blockchainService_1 = require("./blockchainService");
 const createCertificate = async (data) => {
     // 1. Calculate SHA-256 hash from actual PDF file buffer
     const fileHash = (0, hashFile_1.calculateSHA256)(data.fileBuffer);
@@ -25,9 +24,7 @@ const createCertificate = async (data) => {
     const certificateId = await (0, generateCertificateId_1.generateCertificateId)();
     // 3. Generate QR code
     const { qrDataUrl, qrFilePath } = await (0, qrService_1.generateQRCode)(certificateId);
-    // 4. Register on Blockchain (Fault Tolerant)
-    const chainRes = await (0, blockchainService_1.registerCertificateOnChain)(certificateId, fileHash);
-    // 5. Save to MongoDB via Mongoose
+    // 4. Save to MongoDB via Mongoose (Initial state: NOT_REGISTERED)
     const certificate = await Certificate_1.Certificate.create({
         certificateId,
         recipientName: data.recipientName.trim(),
@@ -40,17 +37,17 @@ const createCertificate = async (data) => {
         fileHash,
         status: 'VALID',
         qrCodePath: qrFilePath || null,
-        blockchainNetwork: chainRes.network || 'Ethereum Sepolia (11155111)',
-        blockchainContractAddress: chainRes.contractAddress || process.env.CONTRACT_ADDRESS || null,
-        blockchainTransactionId: chainRes.transactionHash || null,
-        blockchainCertificateHash: chainRes.bytes32Hash || null,
-        blockchainStatus: chainRes.status,
-        blockchainRegisteredAt: chainRes.success ? new Date() : null,
+        blockchainNetwork: 'Ethereum Sepolia',
+        blockchainContractAddress: process.env.CONTRACT_ADDRESS || null,
+        blockchainTransactionId: null,
+        blockchainBlockNumber: null,
+        blockchainCertificateHash: null,
+        blockchainStatus: 'NOT_REGISTERED',
+        blockchainRegisteredAt: null,
     });
     return {
         certificate,
         qrDataUrl,
-        blockchainResult: chainRes,
     };
 };
 exports.createCertificate = createCertificate;
@@ -61,25 +58,62 @@ const retryBlockchainRegistration = async (id) => {
     if (!cert) {
         throw { statusCode: 404, message: 'Certificate not found.' };
     }
-    if (cert.blockchainStatus === 'CONFIRMED') {
-        throw { statusCode: 400, message: 'Certificate is already confirmed on blockchain.' };
-    }
-    const chainRes = await (0, blockchainService_1.registerCertificateOnChain)(cert.certificateId, cert.fileHash);
-    cert.blockchainNetwork = chainRes.network || cert.blockchainNetwork;
-    cert.blockchainContractAddress = chainRes.contractAddress || cert.blockchainContractAddress;
-    cert.blockchainTransactionId = chainRes.transactionHash || cert.blockchainTransactionId;
-    cert.blockchainCertificateHash = chainRes.bytes32Hash || cert.blockchainCertificateHash;
-    cert.blockchainStatus = chainRes.status;
-    if (chainRes.success) {
-        cert.blockchainRegisteredAt = new Date();
-    }
-    await cert.save();
     return {
         certificate: cert,
-        blockchainResult: chainRes,
+        blockchainResult: {
+            success: false,
+            status: cert.blockchainStatus,
+            message: 'Please initiate registration via MetaMask in the browser.',
+        },
     };
 };
 exports.retryBlockchainRegistration = retryBlockchainRegistration;
+const updateCertificateBlockchainMetadata = async (id, data) => {
+    const cert = await Certificate_1.Certificate.findOne({
+        $or: [{ _id: id }, { certificateId: id }],
+    });
+    if (!cert) {
+        throw { statusCode: 404, message: 'Certificate record not found.' };
+    }
+    const validStatuses = [
+        'NOT_REGISTERED',
+        'PENDING',
+        'CONFIRMED',
+        'FAILED',
+        'REVOKED',
+    ];
+    if (!data.status || !validStatuses.includes(data.status)) {
+        throw {
+            statusCode: 400,
+            message: `Invalid blockchain status provided. Allowed statuses: ${validStatuses.join(', ')}`,
+        };
+    }
+    cert.blockchainStatus = data.status;
+    if (data.transactionHash) {
+        cert.blockchainTransactionId = data.transactionHash.trim();
+    }
+    if (data.blockNumber !== undefined && data.blockNumber !== null) {
+        cert.blockchainBlockNumber = Number(data.blockNumber);
+    }
+    if (data.network) {
+        cert.blockchainNetwork = data.network.trim();
+    }
+    if (data.contractAddress) {
+        cert.blockchainContractAddress = data.contractAddress.trim();
+    }
+    if (data.blockchainHash) {
+        cert.blockchainCertificateHash = data.blockchainHash.trim();
+    }
+    if (data.issuerAddress) {
+        cert.blockchainIssuer = data.issuerAddress.trim();
+    }
+    if (data.status === 'CONFIRMED' && !cert.blockchainRegisteredAt) {
+        cert.blockchainRegisteredAt = new Date();
+    }
+    await cert.save();
+    return cert;
+};
+exports.updateCertificateBlockchainMetadata = updateCertificateBlockchainMetadata;
 const getCertificates = async (query) => {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
@@ -147,18 +181,9 @@ const revokeCertificate = async (id, reason) => {
     cert.status = 'REVOKED';
     cert.revokedAt = new Date();
     cert.revocationReason = reason.trim() || 'Certificate revoked by administrative authority.';
-    // Attempt on-chain revocation
-    const chainRes = await (0, blockchainService_1.revokeCertificateOnChain)(cert.certificateId, reason);
-    if (chainRes.success) {
-        cert.blockchainStatus = 'REVOKED';
-        if (chainRes.transactionHash) {
-            cert.blockchainTransactionId = chainRes.transactionHash;
-        }
-    }
     await cert.save();
     return {
         certificate: cert,
-        blockchainRevocation: chainRes,
     };
 };
 exports.revokeCertificate = revokeCertificate;

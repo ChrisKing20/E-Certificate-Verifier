@@ -2,6 +2,7 @@ export type CertificateStatus = 'VALID' | 'REVOKED';
 
 export interface Certificate {
   id?: string;
+  _id?: string;
   certificateId: string;
   certificateNumber?: string; // fallback alias for UI compatibility
   recipientName: string;
@@ -26,7 +27,9 @@ export interface Certificate {
   blockchainNetwork?: string;
   blockchainContractAddress?: string | null;
   blockchainTransactionId?: string | null;
+  blockchainBlockNumber?: number | null;
   blockchainCertificateHash?: string | null;
+  blockchainIssuer?: string | null;
   blockchainRegisteredAt?: string | null;
 }
 

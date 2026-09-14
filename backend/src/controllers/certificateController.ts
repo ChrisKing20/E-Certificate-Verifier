@@ -4,6 +4,7 @@ import {
   getCertificates,
   getCertificateById,
   revokeCertificate,
+  updateCertificateBlockchainMetadata,
 } from '../services/certificateService';
 import fs from 'fs';
 
@@ -122,11 +123,48 @@ export const handleRevokeCertificate = async (
       return;
     }
 
-    const certificate = await revokeCertificate(id, reason as string);
+    const result = await revokeCertificate(id, reason as string);
 
     res.status(200).json({
       success: true,
       message: 'Certificate revoked successfully.',
+      certificate: result.certificate,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleUpdateBlockchainMetadata = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const {
+      transactionHash,
+      blockNumber,
+      network,
+      contractAddress,
+      blockchainHash,
+      issuerAddress,
+      status,
+    } = req.body;
+
+    const certificate = await updateCertificateBlockchainMetadata(id, {
+      transactionHash,
+      blockNumber,
+      network,
+      contractAddress,
+      blockchainHash,
+      issuerAddress,
+      status,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Blockchain metadata updated successfully.',
       certificate,
     });
   } catch (error) {

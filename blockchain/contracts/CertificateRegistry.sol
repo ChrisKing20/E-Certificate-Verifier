@@ -53,7 +53,7 @@ contract CertificateRegistry is Ownable {
      * @param certificateHash Canonical SHA-256 hash formatted as bytes32
      */
     function registerCertificate(
-        string calldata certificateId,
+        string memory certificateId,
         bytes32 certificateHash
     ) external onlyOwner {
         require(bytes(certificateId).length > 0, "Certificate ID cannot be empty");
@@ -88,7 +88,7 @@ contract CertificateRegistry is Ownable {
      * @param certificateHash Canonical SHA-256 hash formatted as bytes32
      */
     function verifyCertificate(
-        string calldata certificateId,
+        string memory certificateId,
         bytes32 certificateHash
     ) external view returns (bool isValid, bool isRevoked) {
         CertificateRecord memory record = _certificatesById[certificateId];
@@ -102,14 +102,14 @@ contract CertificateRegistry is Ownable {
     }
 
     /**
-     * @notice Revoke a registered certificate on-chain
+     * @notice Revoke a registered certificate on-chain with a reason
      * @param certificateId Unique certificate identifier
      * @param reason Official revocation reason
      */
     function revokeCertificate(
-        string calldata certificateId,
-        string calldata reason
-    ) external onlyOwner {
+        string memory certificateId,
+        string memory reason
+    ) public onlyOwner {
         CertificateRecord storage record = _certificatesById[certificateId];
         require(record.registeredAt > 0, "Certificate ID not found");
         require(!record.revoked, "Certificate is already revoked");
@@ -124,14 +124,14 @@ contract CertificateRegistry is Ownable {
     /**
      * @notice Check if a certificate ID is registered on-chain
      */
-    function isCertificateRegistered(string calldata certificateId) external view returns (bool) {
+    function isCertificateRegistered(string memory certificateId) external view returns (bool) {
         return _certificatesById[certificateId].registeredAt > 0;
     }
 
     /**
      * @notice Retrieve on-chain certificate record details
      */
-    function getCertificate(string calldata certificateId)
+    function getCertificate(string memory certificateId)
         external
         view
         returns (

@@ -2,6 +2,8 @@ import { Schema, model, Document } from 'mongoose';
 
 export type CertificateStatus = 'VALID' | 'REVOKED';
 
+export type BlockchainStatus = 'NOT_REGISTERED' | 'PENDING' | 'CONFIRMED' | 'FAILED' | 'REVOKED';
+
 export interface ICertificate extends Document {
   certificateId: string;
   recipientName: string;
@@ -20,9 +22,11 @@ export interface ICertificate extends Document {
   blockchainNetwork: string;
   blockchainContractAddress?: string | null;
   blockchainTransactionId?: string | null;
+  blockchainBlockNumber?: number | null;
   blockchainCertificateHash?: string | null;
-  blockchainStatus: string;
+  blockchainStatus: BlockchainStatus;
   blockchainRegisteredAt?: Date | null;
+  blockchainIssuer?: string | null;
   ipfsHash?: string | null;
   ipfsUrl?: string | null;
   createdAt: Date;
@@ -110,16 +114,25 @@ const certificateSchema = new Schema<ICertificate>(
       type: String,
       default: null,
     },
+    blockchainBlockNumber: {
+      type: Number,
+      default: null,
+    },
     blockchainCertificateHash: {
       type: String,
       default: null,
     },
     blockchainStatus: {
       type: String,
-      default: 'NOT_CONNECTED',
+      enum: ['NOT_REGISTERED', 'PENDING', 'CONFIRMED', 'FAILED', 'REVOKED'],
+      default: 'NOT_REGISTERED',
     },
     blockchainRegisteredAt: {
       type: Date,
+      default: null,
+    },
+    blockchainIssuer: {
+      type: String,
       default: null,
     },
     ipfsHash: {

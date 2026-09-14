@@ -229,22 +229,55 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
                     ? 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/40'
                     : 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/40'
                 }`}>
-                  {certificate.blockchainStatus || 'CONFIRMED'}
+                  {certificate.blockchainStatus === 'CONFIRMED' ? '🟢 BLOCK CREATED' : (certificate.blockchainStatus || 'NOT REGISTERED')}
                 </span>
               </div>
 
               {certificate.blockchainContractAddress && (
                 <div className="flex items-center justify-between">
                   <span className="text-white/70">Smart Contract:</span>
-                  <span className="font-mono text-white/90 text-[11px]">
+                  <a
+                    href={`https://sepolia.etherscan.io/address/${certificate.blockchainContractAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-white/90 hover:text-[#38BDF8] text-[11px] underline"
+                  >
                     {certificate.blockchainContractAddress.slice(0, 10)}...{certificate.blockchainContractAddress.slice(-8)}
-                  </span>
+                  </a>
+                </div>
+              )}
+
+              {certificate.blockchainIssuer && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70">Issuer Wallet:</span>
+                  <a
+                    href={`https://sepolia.etherscan.io/address/${certificate.blockchainIssuer}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-white/90 hover:text-[#38BDF8] text-[11px] underline"
+                  >
+                    {certificate.blockchainIssuer.slice(0, 10)}...{certificate.blockchainIssuer.slice(-8)}
+                  </a>
+                </div>
+              )}
+
+              {certificate.blockchainBlockNumber && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70">Block Number:</span>
+                  <a
+                    href={`https://sepolia.etherscan.io/block/${certificate.blockchainBlockNumber}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[#10B981] font-bold text-[11px] hover:underline"
+                  >
+                    #{certificate.blockchainBlockNumber}
+                  </a>
                 </div>
               )}
 
               {certificate.blockchainTransactionId && (
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-white/70">Sepolia Transaction:</span>
+                  <span className="text-white/70">Transaction Hash:</span>
                   <a
                     href={`https://sepolia.etherscan.io/tx/${certificate.blockchainTransactionId}`}
                     target="_blank"

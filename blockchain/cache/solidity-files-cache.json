@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "D:\\E Certificate Verifier\\blockchain\\contracts\\CertificateRegistry.sol": {
-      "lastModificationDate": 1789400239924,
-      "contentHash": "847ebc2acd39aa452b428bc5690afd6e",
+      "lastModificationDate": 1789414863041,
+      "contentHash": "f6d05df9f1d3cae2ae99bc20a00d8743",
       "sourceName": "contracts/CertificateRegistry.sol",
       "solcConfig": {
         "version": "0.8.20",

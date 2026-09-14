@@ -1,5 +1,6 @@
 import { apiFetch } from './api';
 import { Certificate, CertificateListResponse } from '../types/certificate';
+import { CertificateBlockchainUpdatePayload } from '../types/blockchain';
 
 export interface CreateCertificateParams {
   recipientName: string;
@@ -60,5 +61,19 @@ export const revokeCertificateApi = async (id: string, reason: string): Promise<
   return apiFetch(`/admin/certificates/${id}/revoke`, {
     method: 'PATCH',
     body: JSON.stringify({ reason }),
+  });
+};
+
+export const updateBlockchainMetadataApi = async (
+  id: string,
+  payload: CertificateBlockchainUpdatePayload
+): Promise<{
+  success: boolean;
+  message: string;
+  certificate: Certificate;
+}> => {
+  return apiFetch(`/admin/certificates/${id}/blockchain`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   });
 };

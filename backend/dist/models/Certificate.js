@@ -82,16 +82,25 @@ const certificateSchema = new mongoose_1.Schema({
         type: String,
         default: null,
     },
+    blockchainBlockNumber: {
+        type: Number,
+        default: null,
+    },
     blockchainCertificateHash: {
         type: String,
         default: null,
     },
     blockchainStatus: {
         type: String,
-        default: 'NOT_CONNECTED',
+        enum: ['NOT_REGISTERED', 'PENDING', 'CONFIRMED', 'FAILED', 'REVOKED'],
+        default: 'NOT_REGISTERED',
     },
     blockchainRegisteredAt: {
         type: Date,
+        default: null,
+    },
+    blockchainIssuer: {
+        type: String,
         default: null,
     },
     ipfsHash: {

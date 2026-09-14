@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleRevokeCertificate = exports.handleGetCertificateById = exports.handleGetCertificates = exports.handleCreateCertificate = void 0;
+exports.handleUpdateBlockchainMetadata = exports.handleRevokeCertificate = exports.handleGetCertificateById = exports.handleGetCertificates = exports.handleCreateCertificate = void 0;
 const certificateService_1 = require("../services/certificateService");
 const fs_1 = __importDefault(require("fs"));
 const handleCreateCertificate = async (req, res, next) => {
@@ -98,11 +98,11 @@ const handleRevokeCertificate = async (req, res, next) => {
             });
             return;
         }
-        const certificate = await (0, certificateService_1.revokeCertificate)(id, reason);
+        const result = await (0, certificateService_1.revokeCertificate)(id, reason);
         res.status(200).json({
             success: true,
             message: 'Certificate revoked successfully.',
-            certificate,
+            certificate: result.certificate,
         });
     }
     catch (error) {
@@ -110,3 +110,27 @@ const handleRevokeCertificate = async (req, res, next) => {
     }
 };
 exports.handleRevokeCertificate = handleRevokeCertificate;
+const handleUpdateBlockchainMetadata = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        const { transactionHash, blockNumber, network, contractAddress, blockchainHash, issuerAddress, status, } = req.body;
+        const certificate = await (0, certificateService_1.updateCertificateBlockchainMetadata)(id, {
+            transactionHash,
+            blockNumber,
+            network,
+            contractAddress,
+            blockchainHash,
+            issuerAddress,
+            status,
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Blockchain metadata updated successfully.',
+            certificate,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.handleUpdateBlockchainMetadata = handleUpdateBlockchainMetadata;

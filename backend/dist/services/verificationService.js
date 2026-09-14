@@ -4,6 +4,7 @@ exports.getVerificationLogs = exports.verifyByPdfHash = exports.verifyByCertific
 const Certificate_1 = require("../models/Certificate");
 const VerificationLog_1 = require("../models/VerificationLog");
 const hashFile_1 = require("../utils/hashFile");
+const blockchainService_1 = require("./blockchainService");
 const formatVerifiedAt = (date) => {
     return date.toLocaleDateString('en-US', {
         day: 'numeric',
@@ -54,52 +55,43 @@ const verifyByCertificateNumber = async (certNumber, ipAddress = '127.0.0.1', us
             verifiedAt: verifiedAtStr,
         };
     }
-    const isRevoked = certificate.status === 'REVOKED';
-    const resultEnum = isRevoked ? 'REVOKED' : 'VALID';
+    // Check on-chain integrity if configured
+    const chainCheck = await (0, blockchainService_1.verifyCertificateOnChain)(certificate.certificateId, certificate.fileHash);
+    let status = certificate.status === 'REVOKED' ? 'REVOKED' : 'VALID';
+    if (certificate.status !== 'REVOKED') {
+        if (chainCheck.isRegisteredOnChain) {
+            if (!chainCheck.onChainHashMatches) {
+                status = 'BLOCKCHAIN_MISMATCH';
+            }
+            else if (chainCheck.isRevokedOnChain) {
+                status = 'REVOKED';
+            }
+        }
+    }
     try {
         await VerificationLog_1.VerificationLog.create({
             certificateId: certificate.certificateId,
             verificationMethod: 'CERTIFICATE_NUMBER',
-            result: resultEnum,
+            result: status,
             ipAddress,
             userAgent,
             responseTimeMs: Date.now() - startTime,
         });
     }
     catch (_e) { }
-    if (isRevoked) {
-        return {
-            success: true,
-            status: 'REVOKED',
-            message: 'Certificate found but has been REVOKED.',
-            reason: certificate.revocationReason || 'This certificate was revoked by the issuing authority.',
-            certificate: {
-                certificateId: certificate.certificateId,
-                recipientName: certificate.recipientName,
-                recipientEmail: certificate.recipientEmail,
-                eventName: certificate.eventName,
-                eventDate: certificate.eventDate,
-                department: certificate.department,
-                certificateType: certificate.certificateType,
-                fileHash: certificate.fileHash,
-                issuedAt: certificate.issuedAt.toISOString(),
-                status: certificate.status,
-                revokedAt: certificate.revokedAt ? certificate.revokedAt.toISOString() : null,
-                revocationReason: certificate.revocationReason,
-                qrCodePath: certificate.qrCodePath,
-                blockchainNetwork: certificate.blockchainNetwork,
-                blockchainContractAddress: certificate.blockchainContractAddress,
-                blockchainTransactionId: certificate.blockchainTransactionId,
-                blockchainCertificateHash: certificate.blockchainCertificateHash,
-                blockchainStatus: certificate.blockchainStatus,
-            },
-            verifiedAt: verifiedAtStr,
-        };
-    }
     return {
-        success: true,
-        status: 'VALID',
-        message: 'Certificate authenticity confirmed.',
+        success: status === 'VALID' || status === 'REVOKED',
+        status,
+        message: status === 'REVOKED'
+            ? 'Certificate found but has been REVOKED.'
+            : status === 'BLOCKCHAIN_MISMATCH'
+                ? 'Blockchain Hash Mismatch Detected! Document integrity compromised.'
+                : 'Certificate authenticity confirmed.',
+        reason: status === 'REVOKED'
+            ? certificate.revocationReason || 'This certificate was revoked by the issuing authority.'
+            : status === 'BLOCKCHAIN_MISMATCH'
+                ? 'The stored document hash does not match the Ethereum smart contract immutable record.'
+                : undefined,
         certificate: {
             certificateId: certificate.certificateId,
             recipientName: certificate.recipientName,
@@ -111,8 +103,19 @@ const verifyByCertificateNumber = async (certNumber, ipAddress = '127.0.0.1', us
             fileHash: certificate.fileHash,
             issuedAt: certificate.issuedAt.toISOString(),
             status: certificate.status,
+            revokedAt: certificate.revokedAt ? certificate.revokedAt.toISOString() : null,
+            revocationReason: certificate.revocationReason,
             qrCodePath: certificate.qrCodePath,
+            blockchainNetwork: certificate.blockchainNetwork,
+            blockchainContractAddress: certificate.blockchainContractAddress,
+            blockchainTransactionId: certificate.blockchainTransactionId,
+            blockchainBlockNumber: certificate.blockchainBlockNumber,
+            blockchainCertificateHash: certificate.blockchainCertificateHash,
             blockchainStatus: certificate.blockchainStatus,
+            blockchainIssuer: certificate.blockchainIssuer,
+            blockchainRegisteredAt: certificate.blockchainRegisteredAt
+                ? certificate.blockchainRegisteredAt.toISOString()
+                : null,
         },
         verifiedAt: verifiedAtStr,
     };
@@ -158,52 +161,37 @@ const verifyByPdfHash = async (fileBuffer, ipAddress = '127.0.0.1', userAgent = 
         });
     }
     catch (_e) { }
-    const isRevoked = certificate.status === 'REVOKED';
-    const resultEnum = isRevoked ? 'REVOKED' : 'VALID';
+    const chainCheck = await (0, blockchainService_1.verifyCertificateOnChain)(certificate.certificateId, calculatedHash);
+    let status = certificate.status === 'REVOKED' ? 'REVOKED' : 'VALID';
+    if (certificate.status !== 'REVOKED') {
+        if (chainCheck.isRegisteredOnChain) {
+            if (!chainCheck.onChainHashMatches) {
+                status = 'BLOCKCHAIN_MISMATCH';
+            }
+            else if (chainCheck.isRevokedOnChain) {
+                status = 'REVOKED';
+            }
+        }
+    }
     try {
         await VerificationLog_1.VerificationLog.create({
             certificateId: certificate.certificateId,
             verificationMethod: 'PDF',
-            result: resultEnum,
+            result: status,
             ipAddress,
             userAgent,
             responseTimeMs: Date.now() - startTime,
         });
     }
     catch (_e) { }
-    if (isRevoked) {
-        return {
-            success: true,
-            status: 'REVOKED',
-            message: 'PDF matches registered record, but certificate has been REVOKED.',
-            reason: certificate.revocationReason || 'This certificate was revoked by the issuing authority.',
-            certificate: {
-                certificateId: certificate.certificateId,
-                recipientName: certificate.recipientName,
-                recipientEmail: certificate.recipientEmail,
-                eventName: certificate.eventName,
-                eventDate: certificate.eventDate,
-                department: certificate.department,
-                certificateType: certificate.certificateType,
-                fileHash: certificate.fileHash,
-                issuedAt: certificate.issuedAt.toISOString(),
-                status: certificate.status,
-                revokedAt: certificate.revokedAt ? certificate.revokedAt.toISOString() : null,
-                revocationReason: certificate.revocationReason,
-                qrCodePath: certificate.qrCodePath,
-                blockchainNetwork: certificate.blockchainNetwork,
-                blockchainContractAddress: certificate.blockchainContractAddress,
-                blockchainTransactionId: certificate.blockchainTransactionId,
-                blockchainCertificateHash: certificate.blockchainCertificateHash,
-                blockchainStatus: certificate.blockchainStatus,
-            },
-            verifiedAt: verifiedAtStr,
-        };
-    }
     return {
-        success: true,
-        status: 'VALID',
-        message: 'Authentic PDF Certificate Verified.',
+        success: status === 'VALID' || status === 'REVOKED',
+        status,
+        message: status === 'REVOKED'
+            ? 'PDF matches registered record, but certificate has been REVOKED.'
+            : status === 'BLOCKCHAIN_MISMATCH'
+                ? 'Blockchain Hash Mismatch Detected!'
+                : 'Authentic PDF Certificate Verified.',
         duplicateNotice: previousVerificationsCount > 0,
         certificate: {
             certificateId: certificate.certificateId,
@@ -216,8 +204,19 @@ const verifyByPdfHash = async (fileBuffer, ipAddress = '127.0.0.1', userAgent = 
             fileHash: certificate.fileHash,
             issuedAt: certificate.issuedAt.toISOString(),
             status: certificate.status,
+            revokedAt: certificate.revokedAt ? certificate.revokedAt.toISOString() : null,
+            revocationReason: certificate.revocationReason,
             qrCodePath: certificate.qrCodePath,
+            blockchainNetwork: certificate.blockchainNetwork,
+            blockchainContractAddress: certificate.blockchainContractAddress,
+            blockchainTransactionId: certificate.blockchainTransactionId,
+            blockchainBlockNumber: certificate.blockchainBlockNumber,
+            blockchainCertificateHash: certificate.blockchainCertificateHash,
             blockchainStatus: certificate.blockchainStatus,
+            blockchainIssuer: certificate.blockchainIssuer,
+            blockchainRegisteredAt: certificate.blockchainRegisteredAt
+                ? certificate.blockchainRegisteredAt.toISOString()
+                : null,
         },
         verifiedAt: verifiedAtStr,
     };

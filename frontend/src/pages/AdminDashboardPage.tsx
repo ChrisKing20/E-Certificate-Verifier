@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AdminSidebar } from '../components/AdminSidebar';
 import { DashboardCard } from '../components/DashboardCard';
 import { StatusBadge } from '../components/StatusBadge';
+import { WalletConnect } from '../components/WalletConnect';
+import { BlockchainRegistration } from '../components/BlockchainRegistration';
 import { Certificate } from '../types';
-import { getDashboardStatsApi, DashboardStats, retryBlockchainRegistrationApi } from '../services/adminApi';
+import { getDashboardStatsApi, DashboardStats } from '../services/adminApi';
 import { getCertificatesApi, createCertificateApi, revokeCertificateApi } from '../services/certificateApi';
 import {
   FileCheck,
@@ -52,6 +54,9 @@ export const AdminDashboardPage: React.FC = () => {
   const [revokeTarget, setRevokeTarget] = useState<Certificate | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
   const [revokeSubmitting, setRevokeSubmitting] = useState(false);
+
+  // Blockchain Modal State for specific certificate registration
+  const [blockchainRegisterTarget, setBlockchainRegisterTarget] = useState<Certificate | null>(null);
 
   // Auth Protection Check & Fetch Backend Data
   useEffect(() => {
@@ -176,7 +181,9 @@ export const AdminDashboardPage: React.FC = () => {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <WalletConnect />
+
             <button
               onClick={() => setShowIssueModal(true)}
               className="px-5 py-2.5 bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#D97706] hover:to-[#B45309] text-slate-950 font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-[#F59E0B]/20 flex items-center gap-2 cursor-pointer"
@@ -230,7 +237,7 @@ export const AdminDashboardPage: React.FC = () => {
                 Institutional Certificates Registry
               </h3>
               <p className="text-xs text-secondary-text">
-                Manage real certificate records, view verification status, and flag revoked credentials.
+                Manage real certificate records, view verification status, and register credentials on Ethereum Sepolia.
               </p>
             </div>
 
@@ -283,93 +290,71 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Table */}
-          {certificates.length === 0 ? (
-            <div className="p-12 text-center space-y-4 rounded-2xl bg-page-bg border border-dashed border-border">
-              <FolderOpen className="w-12 h-12 text-secondary-text/50 mx-auto" />
-              <div className="space-y-1">
-                <h4 className="text-base font-extrabold text-heading">No Certificates Issued Yet</h4>
-                <p className="text-xs text-secondary-text max-w-sm mx-auto">
-                  Your certificate database registry is currently empty. Click <span className="font-bold text-primary-teal">Issue New Certificate</span> above to register an event certificate.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowIssueModal(true)}
-                className="px-5 py-2.5 bg-primary-teal text-white text-xs font-bold rounded-xl hover:bg-deep-navy transition-all cursor-pointer inline-flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4 text-gold" /> Issue First Certificate
-              </button>
+          {/* Table view */}
+          {isLoading ? (
+            <div className="py-16 text-center text-secondary-text space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-teal" />
+              <p className="text-xs font-semibold">Querying MongoDB institutional records...</p>
+            </div>
+          ) : certificates.length === 0 ? (
+            <div className="py-16 text-center text-secondary-text space-y-3 border-2 border-dashed border-border rounded-2xl">
+              <FolderOpen className="w-10 h-10 mx-auto text-secondary-text/50" />
+              <p className="text-sm font-bold text-heading">No Certificates Found</p>
+              <p className="text-xs">No records match your active search or status filter.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-heading">
-                <thead className="bg-page-bg text-xs font-bold uppercase tracking-wider text-secondary-text border-b border-border">
-                  <tr>
-                    <th className="py-3.5 px-4">Certificate ID</th>
-                    <th className="py-3.5 px-4">Recipient</th>
-                    <th className="py-3.5 px-4">Event</th>
-                    <th className="py-3.5 px-4">Date</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4">Blockchain</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
+                    <th className="py-3 px-4">Certificate ID</th>
+                    <th className="py-3 px-4">Student Recipient</th>
+                    <th className="py-3 px-4">Event Details</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Blockchain Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/60">
+                <tbody className="divide-y divide-border text-xs font-medium">
                   {certificates.map((cert) => {
                     const certNum = cert.certificateId || cert.certificateNumber || '';
-                    const recipient = cert.recipientName || cert.studentName || '';
+                    const studentName = cert.recipientName || cert.studentName || '';
 
                     return (
-                      <tr key={certNum} className="hover:bg-page-bg/80 transition-colors">
-                        <td className="py-4 px-4 font-mono font-bold text-primary-teal text-xs">
+                      <tr key={cert.id || cert._id || certNum} className="hover:bg-page-bg/50 transition-colors">
+                        <td className="py-4 px-4 font-mono font-bold text-primary-teal">
                           {certNum}
                         </td>
-
                         <td className="py-4 px-4">
-                          <div className="font-bold text-heading">{recipient}</div>
-                          {cert.department && (
-                            <div className="text-xs text-secondary-text">{cert.department}</div>
-                          )}
+                          <span className="font-bold text-heading block">{studentName}</span>
+                          <span className="text-[11px] text-secondary-text">{cert.recipientEmail}</span>
                         </td>
-
-                        <td className="py-4 px-4 font-semibold text-heading">
-                          {cert.eventName}
+                        <td className="py-4 px-4">
+                          <span className="font-semibold text-heading block">{cert.eventName}</span>
+                          <span className="text-[11px] text-secondary-text">{cert.eventDate}</span>
                         </td>
-
-                        <td className="py-4 px-4 text-xs font-mono text-secondary-text">
-                          {cert.eventDate}
-                        </td>
-
                         <td className="py-4 px-4">
                           <StatusBadge status={cert.status} size="sm" />
                         </td>
-
-                        <td className="py-4 px-4 text-xs">
-                          <span className={`font-bold px-2 py-0.5 rounded-md border text-[11px] ${
+                        <td className="py-4 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                             cert.blockchainStatus === 'CONFIRMED'
                               ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
                               : cert.blockchainStatus === 'FAILED'
                               ? 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
                               : 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30'
                           }`}>
-                            {cert.blockchainStatus || 'CONFIRMED'}
+                            {cert.blockchainStatus === 'CONFIRMED' ? '🟢 BLOCK CREATED' : (cert.blockchainStatus || 'NOT REGISTERED')}
                           </span>
                         </td>
 
                         <td className="py-4 px-4 text-right space-x-2">
-                          {cert.blockchainStatus === 'FAILED' && (
+                          {cert.blockchainStatus !== 'CONFIRMED' && cert.status === 'VALID' && (
                             <button
-                              onClick={async () => {
-                                try {
-                                  await retryBlockchainRegistrationApi(certNum);
-                                  fetchDashboardData();
-                                } catch (e: any) {
-                                  alert(e.message || 'Retry failed');
-                                }
-                              }}
-                              className="px-2.5 py-1 bg-[#F59E0B]/10 hover:bg-[#F59E0B] text-[#F59E0B] hover:text-slate-950 text-xs font-bold rounded-lg border border-[#F59E0B]/30 transition-all cursor-pointer"
+                              onClick={() => setBlockchainRegisterTarget(cert)}
+                              className="px-2.5 py-1 bg-[#38BDF8]/10 hover:bg-[#38BDF8] text-[#38BDF8] hover:text-slate-950 text-xs font-bold rounded-lg border border-[#38BDF8]/30 transition-all cursor-pointer"
                             >
-                              Retry Chain
+                              Register Chain
                             </button>
                           )}
 
@@ -418,29 +403,18 @@ export const AdminDashboardPage: React.FC = () => {
                   <div className="p-4 rounded-2xl bg-success/10 border border-success/30 text-success text-xs font-bold flex items-center gap-3">
                     <Check className="w-6 h-6 shrink-0" />
                     <div>
-                      <span className="block text-sm font-extrabold">Certificate Issued & Registered!</span>
-                      <span className="block font-normal">Saved to MongoDB with SHA-256 hash & QR code.</span>
+                      <span className="block text-sm font-extrabold">Certificate Saved to MongoDB!</span>
+                      <span className="block font-normal">Registered in database with SHA-256 hash & QR code.</span>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-page-bg border border-border text-xs space-y-2 font-mono">
-                    <div>
-                      <span className="text-secondary-text block">Generated Certificate ID:</span>
-                      <span className="font-bold text-primary-teal text-sm">{issuedSuccessResult.certificate.certificateId}</span>
-                    </div>
-                    <div>
-                      <span className="text-secondary-text block">Computed SHA-256 Hash:</span>
-                      <span className="font-mono text-[11px] text-heading break-all block bg-surface p-2 rounded-lg border border-border">
-                        {issuedSuccessResult.certificate.fileHash}
-                      </span>
-                    </div>
-                    {issuedSuccessResult.qrDataUrl && (
-                      <div className="pt-2 text-center">
-                        <span className="text-secondary-text block mb-1">Generated QR Code:</span>
-                        <img src={issuedSuccessResult.qrDataUrl} alt="QR Code" className="w-32 h-32 mx-auto rounded-xl border border-border" />
-                      </div>
-                    )}
-                  </div>
+                  <BlockchainRegistration
+                    certificate={issuedSuccessResult.certificate}
+                    onUpdateSuccess={(updated) => {
+                      setIssuedSuccessResult((prev: any) => ({ ...prev, certificate: updated }));
+                      fetchDashboardData();
+                    }}
+                  />
 
                   <button
                     onClick={handleCloseIssueModal}
@@ -550,27 +524,59 @@ export const AdminDashboardPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCloseIssueModal}
-                      className="px-4 py-2 bg-page-bg hover:bg-border text-heading font-bold text-xs rounded-xl cursor-pointer"
+                      className="px-4 py-2 bg-page-bg hover:bg-border/50 text-heading rounded-xl text-xs font-bold border border-border transition-all cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={issueSubmitting}
-                      className="px-5 py-2 bg-primary-teal hover:bg-deep-navy text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-5 py-2 bg-primary-teal hover:bg-teal-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {issueSubmitting ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-gold" /> Issuing...
+                          <Loader2 className="w-4 h-4 animate-spin" /> Issuing...
                         </>
                       ) : (
-                        'Issue & Save Certificate'
+                        'Issue Certificate'
                       )}
                     </button>
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        )}
 
+        {/* Modal for Registering Selected Certificate on Blockchain */}
+        {blockchainRegisterTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <div className="bg-[#0A192F] rounded-3xl border border-[#233554] p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-6 relative my-8">
+              <div className="flex items-center justify-between pb-4 border-b border-[#233554]">
+                <div className="flex items-center gap-2 text-[#38BDF8] font-bold text-lg">
+                  <ShieldCheck className="w-6 h-6" /> Register Certificate on Ethereum
+                </div>
+                <button
+                  onClick={() => setBlockchainRegisterTarget(null)}
+                  className="text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <BlockchainRegistration
+                certificate={blockchainRegisterTarget}
+                onUpdateSuccess={() => {
+                  fetchDashboardData();
+                }}
+              />
+
+              <button
+                onClick={() => setBlockchainRegisterTarget(null)}
+                className="w-full py-2.5 bg-[#112240] border border-[#233554] text-slate-300 hover:text-white font-bold text-xs rounded-xl transition-all"
+              >
+                Close
+              </button>
             </div>
           </div>
         )}
@@ -578,25 +584,28 @@ export const AdminDashboardPage: React.FC = () => {
         {/* Modal for Revoke Confirmation */}
         {revokeTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <div className="bg-surface rounded-3xl border border-border p-6 max-w-md w-full shadow-2xl space-y-4">
-              <div className="flex items-center gap-2 text-error font-extrabold text-lg">
-                <AlertTriangle className="w-6 h-6" /> Revoke Certificate
+            <div className="bg-surface rounded-3xl border border-error/30 p-6 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-center gap-3 text-error">
+                <AlertTriangle className="w-6 h-6 shrink-0" />
+                <h4 className="text-lg font-bold">Revoke Certificate</h4>
               </div>
 
               <p className="text-xs text-secondary-text">
-                Revoking certificate <span className="font-mono font-bold text-heading">{revokeTarget.certificateId || revokeTarget.certificateNumber}</span> will flag it as invalid across all verification channels.
+                Are you sure you want to revoke certificate ID{' '}
+                <strong className="text-heading font-mono">{revokeTarget.certificateId || revokeTarget.certificateNumber}</strong>?
+                This action will mark the certificate as REVOKED.
               </p>
 
-              <form onSubmit={handleRevokeSubmit} className="space-y-3">
-                <div>
-                  <label className="text-xs font-bold text-heading block mb-1">Revocation Reason</label>
+              <form onSubmit={handleRevokeSubmit} className="space-y-4 text-xs font-semibold">
+                <div className="space-y-1">
+                  <label className="text-heading block font-bold">Reason for Revocation</label>
                   <textarea
                     required
+                    rows={3}
                     value={revokeReason}
                     onChange={(e) => setRevokeReason(e.target.value)}
-                    placeholder="Provide official reason for certificate revocation..."
-                    className="w-full p-3 bg-page-bg rounded-xl border border-border text-xs text-heading focus:outline-none focus:border-error"
-                    rows={3}
+                    placeholder="e.g. Disqualified student or incorrect certificate metadata issued."
+                    className="w-full px-3.5 py-2 bg-page-bg rounded-xl border border-border focus:border-error text-heading"
                   />
                 </div>
 
@@ -604,16 +613,16 @@ export const AdminDashboardPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setRevokeTarget(null)}
-                    className="px-4 py-2 bg-page-bg text-heading text-xs font-bold rounded-xl cursor-pointer"
+                    className="px-4 py-2 bg-page-bg text-heading rounded-xl font-bold border border-border cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={revokeSubmitting}
-                    className="px-5 py-2 bg-error hover:bg-error/90 text-white text-xs font-bold rounded-xl cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                    className="px-4 py-2 bg-error hover:bg-red-600 text-white rounded-xl font-bold transition-all cursor-pointer disabled:opacity-50"
                   >
-                    {revokeSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Revocation'}
+                    {revokeSubmitting ? 'Revoking...' : 'Confirm Revocation'}
                   </button>
                 </div>
               </form>

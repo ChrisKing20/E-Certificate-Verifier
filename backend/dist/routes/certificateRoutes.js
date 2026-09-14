@@ -15,4 +15,6 @@ router.get('/', certificateController_1.handleGetCertificates);
 router.get('/:id', certificateController_1.handleGetCertificateById);
 // Revoke certificate (PATCH /api/admin/certificates/:id/revoke)
 router.patch('/:id/revoke', certificateController_1.handleRevokeCertificate);
+// Update blockchain metadata (PATCH /api/admin/certificates/:id/blockchain)
+router.patch('/:id/blockchain', certificateController_1.handleUpdateBlockchainMetadata);
 exports.default = router;

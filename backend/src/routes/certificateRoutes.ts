@@ -4,6 +4,7 @@ import {
   handleGetCertificates,
   handleGetCertificateById,
   handleRevokeCertificate,
+  handleUpdateBlockchainMetadata,
 } from '../controllers/certificateController';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
@@ -24,5 +25,8 @@ router.get('/:id', handleGetCertificateById);
 
 // Revoke certificate (PATCH /api/admin/certificates/:id/revoke)
 router.patch('/:id/revoke', handleRevokeCertificate);
+
+// Update blockchain metadata (PATCH /api/admin/certificates/:id/blockchain)
+router.patch('/:id/blockchain', handleUpdateBlockchainMetadata);
 
 export default router;
