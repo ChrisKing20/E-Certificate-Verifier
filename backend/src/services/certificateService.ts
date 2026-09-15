@@ -1,7 +1,17 @@
+import mongoose from 'mongoose';
 import { Certificate, ICertificate, BlockchainStatus } from '../models/Certificate';
 import { calculateSHA256 } from '../utils/hashFile';
 import { generateCertificateId } from '../utils/generateCertificateId';
 import { generateQRCode } from './qrService';
+
+export const findCertificateByIdOrCertId = async (id: string): Promise<ICertificate | null> => {
+  if (mongoose.isValidObjectId(id)) {
+    return Certificate.findOne({
+      $or: [{ _id: id }, { certificateId: id }],
+    });
+  }
+  return Certificate.findOne({ certificateId: id });
+};
 
 export interface CreateCertificateDto {
   recipientName: string;
@@ -76,9 +86,7 @@ export const createCertificate = async (data: CreateCertificateDto) => {
 };
 
 export const retryBlockchainRegistration = async (id: string) => {
-  const cert = await Certificate.findOne({
-    $or: [{ _id: id }, { certificateId: id }],
-  });
+  const cert = await findCertificateByIdOrCertId(id);
 
   if (!cert) {
     throw { statusCode: 404, message: 'Certificate not found.' };
@@ -98,9 +106,7 @@ export const updateCertificateBlockchainMetadata = async (
   id: string,
   data: UpdateBlockchainMetadataDto
 ) => {
-  const cert = await Certificate.findOne({
-    $or: [{ _id: id }, { certificateId: id }],
-  });
+  const cert = await findCertificateByIdOrCertId(id);
 
   if (!cert) {
     throw { statusCode: 404, message: 'Certificate record not found.' };
@@ -204,9 +210,7 @@ export const getCertificates = async (query: {
 };
 
 export const getCertificateById = async (id: string) => {
-  const certificate = await Certificate.findOne({
-    $or: [{ _id: id }, { certificateId: id }],
-  });
+  const certificate = await findCertificateByIdOrCertId(id);
 
   if (!certificate) {
     throw { statusCode: 404, message: 'Certificate record not found.' };
@@ -216,9 +220,7 @@ export const getCertificateById = async (id: string) => {
 };
 
 export const revokeCertificate = async (id: string, reason: string) => {
-  const cert = await Certificate.findOne({
-    $or: [{ _id: id }, { certificateId: id }],
-  });
+  const cert = await findCertificateByIdOrCertId(id);
 
   if (!cert) {
     throw { statusCode: 404, message: 'Certificate not found.' };
