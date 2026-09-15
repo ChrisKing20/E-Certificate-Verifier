@@ -8,12 +8,12 @@
 A multi-layered defense system combining institutional database lookup, SHA-256 cryptographic PDF hashing, dynamic QR code verification, and smart contract anchoring on Ethereum Sepolia — built for academic institutions, colleges, and event issuers.
 
 ---
-
 ## 📋 Table of Contents
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
+- [Migration & Live Setup (Cloud & Sepolia)](#-migration--live-setup-cloud--sepolia)
 - [Getting Started](#-getting-started)
 - [Smart Contract](#-smart-contract)
 - [API Reference](#-api-reference)
@@ -77,7 +77,7 @@ The system fails fast — if Layer 1 or Layer 2 detects a non-registered or alte
                          |                                   |
                          v                                   v
        +-----------------------------------+   +-------------------------------+
-       |       MongoDB (Mongoose ODM)      |   |  Ethereum Sepolia Blockchain  |
+       |    MongoDB Atlas (Mongoose ODM)   |   |  Ethereum Sepolia Blockchain  |
        |  - Certificates & Revocations     |   |  - Solidity Smart Contract    |
        |  - Verification Audit Logs        |   |  - CertificateRegistry.sol    |
        +-----------------------------------+   +-------------------------------+
@@ -93,7 +93,7 @@ The system fails fast — if Layer 1 or Layer 2 detects a non-registered or alte
 | **Node.js (v20+)** | Backend server runtime environment |
 | **Express.js** | RESTful API framework |
 | **TypeScript** | Type-safe backend development |
-| **MongoDB + Mongoose** | Document database & Object Data Modeling (ODM) |
+| **MongoDB Atlas + Mongoose** | Document database & Object Data Modeling (ODM) |
 | **JWT & Bcrypt** | Institutional admin authentication & password hashing |
 | **Node Crypto** | Native SHA-256 hash generation for PDF binary streams |
 | **Multer** | Multipart form data file uploader (10MB PDF limit) |
@@ -123,6 +123,29 @@ The system fails fast — if Layer 1 or Layer 2 detects a non-registered or alte
 
 ---
 
+## 🚀 Migration & Live Setup (Cloud & Sepolia)
+
+> **Branch:** `feature/cloud-mongo-and-sepolia`
+
+### Live Infrastructure Status
+1. 🍃 **Database**: Connected to **MongoDB Atlas** cloud cluster.
+2. ⛓️ **Blockchain**: Smart contract compiled & deployed to **Ethereum Sepolia Testnet**.
+3. 🔍 **Etherscan Verified Code**: Verified on Sepolia Etherscan.
+
+### Live Deployed Smart Contract Details
+- **Contract Name**: `CertificateRegistry` (Solidity 0.8.20, OpenZeppelin Ownable)
+- **Network**: Ethereum Sepolia Testnet (Chain ID: `11155111` / `0xaa36a7`)
+- **Contract Address**: [`0xcd70a18caa8b0cc879680e5f8B078577D64ce9de`](https://sepolia.etherscan.io/address/0xcd70a18caa8b0cc879680e5f8B078577D64ce9de)
+- **Deployment Transaction**: [`0xbf3d0284ebccad26826710b9a21524fb7d93014fa692903d34b63e62c54989ed`](https://sepolia.etherscan.io/tx/0xbf3d0284ebccad26826710b9a21524fb7d93014fa692903d34b63e62c54989ed)
+- **Etherscan Verification**: [View Verified Contract on Etherscan](https://sepolia.etherscan.io/address/0xcd70a18caa8b0cc879680e5f8B078577D64ce9de#code)
+
+### Summary of Critical Fixes Included
+- **Route Mismatch Fix**: Added missing admin endpoints (`/certificates/:id`, `/certificates/:id/revoke`, `/certificates/:id/blockchain`) to prevent HTML 404 JSON parsing errors.
+- **Mongoose CastError Fix**: Implemented `findCertificateByIdOrCertId` helper to prevent ObjectId casting errors when querying custom certificate IDs like `ECV-2026-000001`.
+- **macOS Port 5000 AirPlay Conflict Fix**: Shifted backend default port to **`5001`** (frontend updated to point to `http://localhost:5001/api`).
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -130,7 +153,7 @@ The system fails fast — if Layer 1 or Layer 2 detects a non-registered or alte
 | :--- | :--- |
 | **Node.js** | v18.0.0 or higher |
 | **npm** | v9.0.0 or higher |
-| **MongoDB** | Local MongoDB server or MongoDB Atlas URI |
+| **MongoDB** | MongoDB Atlas URI or local MongoDB |
 | **Git** | Latest |
 
 ---
@@ -157,7 +180,7 @@ cp .env.example .env
 # Seed institutional administrator account
 npm run seed
 
-# Start development backend server (Port 5000)
+# Start development backend server (Port 5001)
 npm run dev
 ```
 
@@ -178,8 +201,10 @@ The frontend dashboard runs at `http://localhost:5173`
 
 ---
 
-### 4️⃣ Blockchain Setup (Smart Contract Deployment)
-To enable on-chain certificate anchoring on Ethereum Sepolia:
+### 4️⃣ Blockchain Setup (Optional - Smart Contract is already live!)
+The smart contract is **already deployed and live on Sepolia** at `0xcd70a18caa8b0cc879680e5f8B078577D64ce9de`. 
+
+If you want to deploy your own custom contract instance:
 
 ```bash
 # Open a new terminal and navigate to blockchain directory
@@ -204,28 +229,30 @@ npm run deploy:sepolia
 
 #### Backend Configuration (`backend/.env`)
 ```env
-PORT=5000
-MONGODB_URI="mongodb://localhost:27017/ecertificate"
+PORT=5001
+MONGODB_URI="mongodb+srv://<username>:<password>@cluster0.t9ivs.mongodb.net/ecertificate?retryWrites=true&w=majority&appName=Cluster0"
 JWT_SECRET="ecert-verifier-super-secret-jwt-key-2026-phase2"
 CORS_ORIGIN="http://localhost:5173"
 NODE_ENV="development"
 
 # ── Blockchain Config (Ethereum Sepolia) ──
-SEPOLIA_RPC_URL="https://rpc.sepolia.org"
+SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
 BLOCKCHAIN_PRIVATE_KEY="your-wallet-private-key"
-CONTRACT_ADDRESS="0xYourDeployedContractAddressOnSepolia"
+CONTRACT_ADDRESS="0xcd70a18caa8b0cc879680e5f8B078577D64ce9de"
 ```
 
 #### Frontend Configuration (`frontend/.env`)
 ```env
-VITE_API_BASE_URL="http://localhost:5000/api"
+VITE_API_BASE_URL="http://localhost:5001/api"
+VITE_CONTRACT_ADDRESS="0xcd70a18caa8b0cc879680e5f8B078577D64ce9de"
 ```
 
 #### Blockchain Configuration (`blockchain/.env`)
 ```env
-SEPOLIA_RPC_URL="https://rpc.sepolia.org"
-PRIVATE_KEY="your-wallet-private-key"
+SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+BLOCKCHAIN_PRIVATE_KEY="your-wallet-private-key"
 ETHERSCAN_API_KEY="your-etherscan-api-key"
+CONTRACT_ADDRESS="0xcd70a18caa8b0cc879680e5f8B078577D64ce9de"
 ```
 
 ---
@@ -262,6 +289,7 @@ npm run seed
 ## ⛓️ Smart Contract
 
 - **Network**: Ethereum Sepolia Testnet (Chain ID: `11155111`)
+- **Deployed Address**: [`0xcd70a18caa8b0cc879680e5f8B078577D64ce9de`](https://sepolia.etherscan.io/address/0xcd70a18caa8b0cc879680e5f8B078577D64ce9de#code)
 - **Language**: Solidity 0.8.20
 - **Source**: [`blockchain/contracts/CertificateRegistry.sol`](blockchain/contracts/CertificateRegistry.sol)
 
@@ -347,7 +375,7 @@ E-Certificate-Verifier/
 │   │   └── CertificateRegistry.sol     # Solidity 0.8.20 Smart Contract
 │   ├── scripts/
 │   │   └── deploy.ts                   # Sepolia deployment script
-│   ├── test/                           # Hardhat contract unit tests
+│   ├── test/                       # Hardhat contract unit tests
 │   ├── hardhat.config.ts               # Hardhat network configuration
 │   └── package.json
 │
@@ -364,7 +392,8 @@ E-Certificate-Verifier/
 │   └── package.json
 │
 ├── .gitignore
-├── README.md                           # You are here!
+├── README.md                           # Main Project README
+├── UPDATED_README.md                   # Migration Summary
 └── package.json
 ```
 

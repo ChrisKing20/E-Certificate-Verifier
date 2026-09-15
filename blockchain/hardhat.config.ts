@@ -5,7 +5,13 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
-const BLOCKCHAIN_PRIVATE_KEY = process.env.BLOCKCHAIN_PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001";
+const getPrivateKey = (): string => {
+  const pk = process.env.BLOCKCHAIN_PRIVATE_KEY?.trim() || "";
+  if (!pk || pk === "0x0000000000000000000000000000000000000000000000000000000000000001") return "";
+  return pk.startsWith("0x") ? pk : `0x${pk}`;
+};
+
+const rawPrivateKey = getPrivateKey();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -27,7 +33,7 @@ const config: HardhatUserConfig = {
     },
     sepolia: {
       url: SEPOLIA_RPC_URL,
-      accounts: BLOCKCHAIN_PRIVATE_KEY !== "0x0000000000000000000000000000000000000000000000000000000000000001" ? [BLOCKCHAIN_PRIVATE_KEY] : [],
+      accounts: rawPrivateKey ? [rawPrivateKey] : [],
       chainId: 11155111,
     },
   },
