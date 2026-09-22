@@ -20,13 +20,17 @@ export const AdminLoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await login(email.trim(), password);
-      navigate('/admin/dashboard');
+      const loggedUser = await login(email.trim(), password);
+      if (loggedUser.role === 'SUPER_ADMIN') {
+        navigate('/super-admin/dashboard');
+      } else {
+        navigate('/admin/dashboard');
+      }
     } catch (err: any) {
       if (err.message && err.message.includes('Failed to fetch')) {
-        setErrorMsg('Unable to connect to the server. Please try again.');
+        setErrorMsg('Unable to connect to the backend server. Please try again.');
       } else {
-        setErrorMsg('Invalid email or password.');
+        setErrorMsg(err.message || 'Invalid email or password.');
       }
     } finally {
       setIsSubmitting(false);
@@ -150,6 +154,23 @@ export const AdminLoginPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Credentials Helper Box */}
+          <div className="p-4 rounded-2xl bg-[#0A192F] border border-slate-800 text-xs text-slate-300 space-y-2">
+            <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+              <Key className="w-4 h-4" /> System Administrator Logins:
+            </div>
+            <div className="space-y-1 font-mono text-[11px]">
+              <div>
+                <span className="text-cyan-400 font-bold">Super Admin:</span> superadmin@verifier.org | <span className="text-slate-200 font-bold">Admin@123</span>
+              </div>
+              <div>
+                <span className="text-emerald-400 font-bold">Institutional Admin:</span> admin@ecertificate.local | <span className="text-slate-200 font-bold">Admin@123</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 font-sans italic pt-1 border-t border-slate-800">
+              * Newly registered institutions (like Christ University) remain in <strong>PENDING</strong> status until approved by Super Admin in the Institution Management Console.
+            </p>
+          </div>
 
         </div>
 

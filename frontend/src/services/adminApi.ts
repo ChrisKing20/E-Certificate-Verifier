@@ -27,7 +27,7 @@ export const getVerificationLogsApi = async (params?: { page?: number; limit?: n
   if (params?.limit) searchParams.append('limit', params.limit.toString());
 
   const queryStr = searchParams.toString() ? `?${searchParams.toString()}` : '';
-  return apiFetch(`/admin/verification-logs${queryStr}`);
+  return apiFetch<{ success: boolean; logs: any[]; pagination: any }>(`/verify/admin/logs${queryStr}`);
 };
 
 export const retryBlockchainRegistrationApi = async (certificateId: string) => {

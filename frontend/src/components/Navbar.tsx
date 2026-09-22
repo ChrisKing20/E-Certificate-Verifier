@@ -67,7 +67,7 @@ export const Navbar: React.FC = () => {
                     : 'text-[#94A3B8] hover:text-white hover:bg-[#112240]'
                 }`}
               >
-                <Building2 className="w-4 h-4 text-amber-400" /> Super Admin
+                <Building2 className="w-4 h-4 text-amber-400" /> Institution Management Console
               </Link>
             )}
           </nav>
@@ -175,11 +175,11 @@ export const Navbar: React.FC = () => {
               )}
               {user?.role === 'SUPER_ADMIN' && (
                 <Link
-                  to="/superadmin/dashboard"
+                  to="/super-admin/dashboard"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-white hover:bg-[#112240]"
                 >
-                  <Building2 className="w-5 h-5 text-amber-400" /> Super Admin
+                  <Building2 className="w-5 h-5 text-amber-400" /> Institution Management Console
                 </Link>
               )}
               <button

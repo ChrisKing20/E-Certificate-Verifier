@@ -18,6 +18,7 @@ A multi-layered defense platform combining institutional multi-tenant database i
 - [Smart Contract & IPFS Integration](#-smart-contract--ipfs-integration)
 - [API Reference](#-api-reference)
 - [Project Structure](#-project-structure)
+- [Phase 6 Testing & Security](#-phase-6-testing-performance--security-documentation)
 - [Contributors](#-contributors)
 - [References](#-references)
 - [License](#-license)
@@ -26,14 +27,15 @@ A multi-layered defense platform combining institutional multi-tenant database i
 
 ## 🔍 Overview
 
-Academic and digital credential fraud is a critical global challenge. Traditional single-tenant verification systems rely on basic database lookups or visual design checks, leaving severe vulnerabilities against document alteration or database tampering. **E-Cert-Verifier** introduces a defense-in-depth strategy with four sequential verification layers:
+Academic and digital credential fraud is a critical global challenge. Traditional single-tenant verification systems rely on basic database lookups or visual design checks, leaving severe vulnerabilities against document alteration or database tampering. **E-Cert-Verifier** introduces a defense-in-depth strategy with **five sequential verification layers**:
 
 | Layer | Technology | What It Catches |
 | :--- | :--- | :--- |
 | 🔍 **Layer 1** | **Unique Certificate ID & Institutional Registry** | Non-existent, fabricated, or unapproved institutional certificate IDs |
 | 🔐 **Layer 2** | **SHA-256 Cryptographic Stream Hash** | Post-issuance PDF document tampering, text edits, or pixel alterations |
-| 📱 **Layer 3** | **Dynamic QR Code & IPFS Payload** | Fake certificate URLs, forged physical prints, or unverified scan codes |
-| ⛓️ **Layer 4** | **Ethereum Sepolia Blockchain Anchor** | Centralized database tampering, backdated entries, & unauthorized record deletions |
+| 📱 **Layer 3** | **Dynamic QR Code & Payload Verification** | Fake certificate URLs, forged physical prints, or unverified scan codes |
+| 📦 **Layer 4** | **IPFS Decentralized File Storage & CID Immutability** | Centralized file server loss, single-point-of-failure storage tampering, & altered PDF payloads |
+| ⛓️ **Layer 5** | **Ethereum Sepolia Blockchain Anchor** | Centralized database tampering, backdated entries, & unauthorized record deletions |
 
 The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-registered or altered document hash, subsequent steps provide immediate audit feedback without delay.
 
@@ -43,47 +45,67 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
 
 - 🏢 **Multi-Tenant Institutional Platform** — Isolated data per institution (`Institution A`, `Institution B`), preventing cross-tenant access to certificates, metrics, or user logs.
 - 👑 **Super Admin Onboarding Approval** — DB-backed institution onboarding flow (`PENDING` -> Super Admin Approval -> `ACTIVE`). Admins cannot log in until their institution is approved.
-- 🔑 **Multi-Role Authentication & OAuth** — Secure Email/Password and Google OAuth (`Continue with Google`) for Students (`USER`) and Institutional Administrators (`ADMIN`).
+- 🔑 **Multi-Role Authentication & OAuth** — Secure Email/Password and Google OAuth (`Continue with Google`) for Students (`USER`), Institutional Administrators (`ADMIN`), and System Super Admins (`SUPER_ADMIN`).
 - 🔒 **Cryptographic Integrity & SHA-256** — Real-time SHA-256 binary hash generation & instant signature matching for uploaded PDF certificates.
-- 📦 **IPFS Decentralized Storage** — Automatic PDF file pinning to IPFS via Pinata with fallback local storage and CID immutability.
-- ⛓️ **Ethereum Sepolia Blockchain Anchor** — On-chain certificate hash registration via Solidity `CertificateRegistry.sol` contract formatted as `bytes32`.
-- 📱 **QR Code Verification** — Instant public verification via Unique ID lookup (`ECV-2026-XXXXXX`), file upload, or live camera QR scanning.
-- 📊 **Student & Admin Portals** — Dedicated Student Dashboard (`/dashboard`), Institution Admin Console (`/admin/dashboard`), and Platform Super Admin Console (`/superadmin/dashboard`).
+- 📦 **IPFS Decentralized Storage** — Automatic PDF file pinning to IPFS via Pinata SDK with fallback local storage, deterministic CIDs, and multi-gateway resolution (`ipfs.io`, `dweb.link`, `cloudflare-ipfs.com`).
+- ⛓️ **Ethereum Sepolia Blockchain Anchor** — On-chain certificate hash registration via Solidity `CertificateRegistry.sol` contract formatted as `bytes32` primitives.
+- 📱 **Multi-Modal Verification** — Instant public verification via Unique ID lookup (`ECV-2026-XXXXXX`), file upload SHA-256 hashing, or live camera QR scanning.
+- 📊 **Role-Based Analytics Dashboards** — Dedicated Student Dashboard (`/dashboard`), Institution Admin Console (`/admin/dashboard`), and Platform Super Admin Console (`/superadmin/dashboard`).
 
 ---
 
 ## 🏗️ Architecture
 
+
 ```
-                                    +-----------------------+
-                                    |   Public / Verifier   |
-                                    +-----------+-----------+
-                                                |
-                     +--------------------------+--------------------------+
-                     |                          |                          |
-              [ Unique ID ]              [ Upload PDF ]               [ Scan QR ]
-                     |                          |                          |
-                     v                          v                          v
-         +-----------------------------------------------------------------------+
-         |                 E-Cert-Verifier Frontend (React 18 + Vite + TS)       |
-         +-----------------------------------+-----------------------------------+
-                                             | HTTP / REST
-                                             v
-         +-----------------------------------------------------------------------+
-         |                 E-Cert-Verifier Backend (Node.js + Express + TS)       |
-         |                                                                       |
-         |  +------------------+  +--------------------+  +--------------------+  |
-         |  |  SHA-256 Crypto  |  |   IPFS Pinata SDK  |  |   QR Code Engine   |  |
-         |  +------------------+  +--------------------+  +--------------------+  |
-         +-------------------+-------------------+-------------------+-----------+
-                             |                   |                   |
-                             v                   v                   v
-         +-----------------------+   +-------------------+   +-------------------+
-         | MongoDB Atlas Cloud   |   | IPFS Gateway      |   | Ethereum Sepolia  |
-         | - Multi-Tenant Users  |   | - Pinata Storage  |   | - Smart Contract  |
-         | - Certificates & Logs |   | - Immutable CID   |   | - CertRegistry.sol|
-         +-----------------------+   +-------------------+   +-------------------+
-```
+                                  +-------------------+
+                                  | Public / Verifier |
+                                  +---------+---------+
+                                            |
+                  +-------------------------+-------------------------+
+                  |                         |                         |
+          +-------v-------+         +-------v-------+         +-------v-------+
+          |  Upload PDF   |         |    Scan QR    |         |   Unique ID   |
+          +-------+-------+         +-------+-------+         +-------+-------+
+                  |                         |                         |
+                  +-------------------------+-------------------------+
+                                            |
+                                            v
+                      +-------------------------------------------+
+                      |        E-Cert-Verifier Frontend           |
+                      |   (React 18 + Vite + TypeScript)          |
+                      +---------------------+---------------------+
+                                            | HTTP / REST
+                                            v
+                      +-------------------------------------------+ <--- CID ---+
+                      |         E-Cert-Verifier Backend           |             |
+                      |     (Node.js + Express + TypeScript)      |             |
+                      +--+--------------+---------------+------+--+             |
+                         |              |               |      |                |
+             +-----------+              |               |      +----------+     |
+             |                          |               |                 |     |
+             v                          v               v                 v     |
+   /-------------------\      /-------------------\  Store Cert   /---------------\
+  /       SHA-256       \    /   QR Code Engine    \ ----------> /  IPFS Pinata    \
+ <  Certificate Hashing  >  < Generation & Parsing >            <   SDK Document    >
+  \                     /    \                     /               \   Pinning     /
+   \---------+---------/      \---------+---------/                 \-----+-------/
+             |                          |                                 |     |
+    Write    | Hash +                   | Store                           | Pin | CID
+   On-Chain  | Metadata                 | Certificate                     | PDF |
+             v                          v                                 v     |
++------------+------------+  +----------+----------+        +-------------+-----+----+
+| Ethereum Sepolia        |  | MongoDB Atlas Cloud     |        | IPFS Gateway / Pinata    |
+| CertRegistry.sol        |  | Multi-Tenant Users,     |        | Immutable Certificate    |
+| On-Chain Verification   |  | Certificates & Logs     |        | CID PDF Storage          |
++------------+------------+  +----------+----------+        +--------------------------+
+             |                          |
+   Verify    |                          | Read Verification Record
+  Transaction|                          |
+             v                          v
+      +------+--------------------------+------+
+      |      Certificate Verified / Invalid    |
+      +----------------------------------------+
 
 ---
 
@@ -99,7 +121,7 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
 | **JWT & Bcrypt** | Multi-role authentication & password hashing |
 | **Node Crypto** | Native SHA-256 hash generation for PDF binary streams |
 | **Multer** | Multipart form data file uploader |
-| **Pinata IPFS SDK** | Decentralized certificate storage & pinning |
+| **Pinata IPFS SDK** | Decentralized certificate storage, pinning & gateway resolution |
 | **Helmet & Express Rate Limit**| HTTP security headers and rate limiting protection |
 
 ### Frontend
@@ -253,10 +275,16 @@ cd frontend && npm install && npm run dev
 
 ## ⛓️ Smart Contract & IPFS Integration
 
+### IPFS Decentralized Storage Architecture
+- **Provider**: Pinata IPFS API with fallback deterministic content-addressed hashing (`bafkrei...`).
+- **Gateway Resolution**: Multi-gateway fetch fallback (`ipfs.io`, `dweb.link`, `cloudflare-ipfs.com`) ensuring file availability.
+- **Service File**: [`backend/src/services/ipfsService.ts`](backend/src/services/ipfsService.ts)
+
+### Smart Contract Specification
 - **Network**: Ethereum Sepolia Testnet (Chain ID: `11155111`)
 - **Smart Contract Framework**: Solidity 0.8.20 + OpenZeppelin Contracts v5 (`Ownable`)
 - **Source File**: [`blockchain/contracts/CertificateRegistry.sol`](blockchain/contracts/CertificateRegistry.sol)
-- **Data Privacy Guarantee**: Stores strictly cryptographic metadata (`certificateId`, `bytes32` SHA-256 hash, issuer wallet, timestamps, revocation status). No personal details or PDF files are stored on-chain.
+- **Data Privacy Guarantee**: Stores strictly cryptographic metadata (`certificateId`, `bytes32` SHA-256 hash, issuer wallet, timestamps, revocation status). No personal details or raw PDF files are stored on-chain.
 
 | Function | Type | Modifier | Description |
 | :--- | :--- | :--- | :--- |
@@ -317,7 +345,7 @@ E-Cert-Verifier/
 │   │   ├── models/             # Mongoose schemas (User, Institution, Certificate, Log)
 │   │   ├── routes/             # Express API routes
 │   │   ├── scripts/            # Super Admin seed & multi-tenant migration scripts
-│   │   ├── services/           # Business logic (IPFS, Blockchain, QR, Auth)
+│   │   ├── services/           # Business logic (IPFS, Blockchain, QR, Auth, Verification)
 │   │   ├── app.ts              # Express application setup
 │   │   └── server.ts           # HTTP server entry point
 │   ├── uploads/                # Local PDF & QR storage
@@ -340,9 +368,48 @@ E-Cert-Verifier/
 │   ├── package.json
 │   └── vite.config.ts
 │
+├── 📑 docs/                    # Phase 6 empirical research, security & benchmark reports
+│   ├── authentication-testing.md
+│   ├── experiment-results.csv
+│   ├── multi-tenant-testing.md
+│   ├── performance-report.md
+│   ├── research-methodology.md
+│   ├── security-report.md
+│   └── testing-report.md
+│
 ├── LICENSE                     # MIT License
 ├── README.md                   # Main Documentation
 └── package.json
+```
+
+---
+
+## 🧪 Phase 6 Testing, Performance & Security Documentation
+
+All Phase 6 research deliverables, performance benchmarks, and security reports are stored in the [`docs/`](docs/) directory:
+
+- 📊 [`docs/experiment-results.csv`](docs/experiment-results.csv) — Empirical dataset measuring SHA-256 hashing speed, MongoDB query latency, and IPFS lookup overhead across file sizes (100KB to 10MB).
+- 🧪 [`docs/testing-report.md`](docs/testing-report.md) — Comprehensive end-to-end test suite summary (100% pass rate across 89 test cases).
+- ⚡ [`docs/performance-report.md`](docs/performance-report.md) — Hashing latency, verification response times, and database query scalability analysis.
+- 🛡️ [`docs/security-report.md`](docs/security-report.md) — Threat model, PDF magic-byte validation (`%PDF-`), filename sanitization, and secret protection policies.
+- 🔬 [`docs/research-methodology.md`](docs/research-methodology.md) — Research answers (RQ1–RQ7) on cryptographic hash integrity and multi-tenant performance.
+- 🏢 [`docs/multi-tenant-testing.md`](docs/multi-tenant-testing.md) — Institutional data boundary isolation test cases and cross-tenant attack prevention.
+- 🔐 [`docs/authentication-testing.md`](docs/authentication-testing.md) — Role-based access control matrix and Google OAuth security policies.
+
+### Running Automated Test Suites
+
+```bash
+# Run Hardhat Smart Contract Tests
+cd blockchain
+npx hardhat test
+
+# Run Backend Jest API & Integration Test Suite
+cd backend
+npm test
+
+# Run Empirical Performance Benchmark Script
+cd backend
+npx ts-node src/scripts/runPerformanceBenchmarks.ts
 ```
 
 ---
@@ -358,12 +425,13 @@ Literature survey entries used to motivate E-Cert-Verifier design decisions:
 
 ## 👥 Contributors
 
-- **Chris King** — Core Architecture, Backend (Node.js/TypeScript), Multi-Tenant Platform Engine, Frontend (React 18), & Smart Contract Anchoring (Ethereum Sepolia).
+- **Chris King** — Core Architecture, Backend (Node.js/TypeScript), Multi-Tenant Platform Engine, Frontend (React 18), IPFS Pinata Service & Smart Contract Anchoring (Ethereum Sepolia).
 
 ---
 
 ## 📄 License
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+---
 
-Built with ❤️ using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.
+Built with 😈 using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.

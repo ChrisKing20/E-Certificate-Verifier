@@ -5,6 +5,7 @@ import {
   getVerificationLogs,
 } from '../services/verificationService';
 import fs from 'fs';
+import { validatePdfMagicBytes } from '../middleware/uploadMiddleware';
 
 export const handleVerifyByNumber = async (
   req: Request,
@@ -42,6 +43,18 @@ export const handleVerifyByPdf = async (
     const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const fileBuffer = fs.readFileSync(req.file.path);
+
+    if (!validatePdfMagicBytes(fileBuffer)) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(400).json({
+        success: false,
+        status: 'INVALID',
+        message: 'Invalid file signature. Uploaded file is not a valid PDF document.',
+      });
+      return;
+    }
 
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);

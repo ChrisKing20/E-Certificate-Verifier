@@ -16,6 +16,18 @@ export const sanitizeFilename = (rawName: string): string => {
   return baseName.replace(/[^a-zA-Z0-9_.-]/g, '_');
 };
 
+// Validate PDF Magic Bytes Signature (%PDF- / 0x25 0x50 0x44 0x46 0x2D)
+export const validatePdfMagicBytes = (buffer: Buffer): boolean => {
+  if (!buffer || buffer.length < 5) return false;
+  return (
+    buffer[0] === 0x25 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x44 &&
+    buffer[3] === 0x46 &&
+    buffer[4] === 0x2d
+  );
+};
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, config.uploadDir);

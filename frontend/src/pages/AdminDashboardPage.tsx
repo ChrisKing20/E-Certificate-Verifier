@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AdminSidebar } from '../components/AdminSidebar';
 import { DashboardCard } from '../components/DashboardCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { WalletConnect } from '../components/WalletConnect';
 import { BlockchainRegistration } from '../components/BlockchainRegistration';
 import { Certificate } from '../types';
-import { getDashboardStatsApi, DashboardStats, migrateIpfsApi } from '../services/adminApi';
-import { getCertificatesApi, createCertificateApi, revokeCertificateApi } from '../services/certificateApi';
+import {
+  getDashboardStatsApi,
+  DashboardStats,
+  migrateIpfsApi,
+  getVerificationLogsApi
+} from '../services/adminApi';
+import {
+  getCertificatesApi,
+  createCertificateApi,
+  revokeCertificateApi
+} from '../services/certificateApi';
 import {
   FileCheck,
   CheckCircle2,
@@ -22,11 +31,25 @@ import {
   Check,
   FolderOpen,
   HardDrive,
-  RefreshCw
+  RefreshCw,
+  Settings as SettingsIcon,
+  Cpu,
+  Globe,
+  Key,
+  LogOut,
+  Copy,
+  CheckCheck,
+  Lock
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
+
+  const activePath = location.pathname;
+
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalCertificates: 0,
@@ -43,6 +66,10 @@ export const AdminDashboardPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'VALID' | 'REVOKED'>('ALL');
   const [isLoading, setIsLoading] = useState(false);
   const [isMigratingIpfs, setIsMigratingIpfs] = useState(false);
+
+  // Verification Logs State
+  const [verificationLogs, setVerificationLogs] = useState<any[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // Issue Certificate Modal States
   const [showIssueModal, setShowIssueModal] = useState(false);
@@ -65,6 +92,9 @@ export const AdminDashboardPage: React.FC = () => {
   // Blockchain Modal State for specific certificate registration
   const [blockchainRegisterTarget, setBlockchainRegisterTarget] = useState<Certificate | null>(null);
 
+  // Copy Feedback State
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
+
   // Auth Protection Check & Fetch Backend Data
   useEffect(() => {
     const isLoggedIn = sessionStorage.getItem('ecv_admin_logged_in') === 'true' || !!sessionStorage.getItem('ecv_token');
@@ -75,6 +105,12 @@ export const AdminDashboardPage: React.FC = () => {
 
     fetchDashboardData();
   }, [navigate]);
+
+  useEffect(() => {
+    if (activePath === '/admin/verification-logs') {
+      fetchVerificationLogs();
+    }
+  }, [activePath]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -92,6 +128,20 @@ export const AdminDashboardPage: React.FC = () => {
       console.log('Unable to query database or fetch dashboard metrics.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchVerificationLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const res = await getVerificationLogsApi({ limit: 50 });
+      if (res.success && res.logs) {
+        setVerificationLogs(res.logs);
+      }
+    } catch (err) {
+      console.log('Failed to fetch verification audit logs:', err);
+    } finally {
+      setIsLoadingLogs(false);
     }
   };
 
@@ -113,6 +163,17 @@ export const AdminDashboardPage: React.FC = () => {
     } finally {
       setIsMigratingIpfs(false);
     }
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHash(text);
+    setTimeout(() => setCopiedHash(null), 2000);
+  };
+
+  const handleLogoutDirect = () => {
+    logout();
+    navigate('/');
   };
 
   const adminEmail = sessionStorage.getItem('ecv_admin_email') || 'admin@ecertificate.local';
@@ -182,6 +243,12 @@ export const AdminDashboardPage: React.FC = () => {
     setIssueError(null);
   };
 
+  const getPageTitle = () => {
+    if (activePath === '/admin/certificates') return 'Certificates Registry';
+    if (activePath === '/admin/verification-logs') return 'Verification Audit Logs';
+    return 'Dashboard Overview';
+  };
+
   return (
     <div className="min-h-screen flex bg-page-bg">
       {/* Admin Sidebar */}
@@ -200,7 +267,7 @@ export const AdminDashboardPage: React.FC = () => {
               <span className="text-xs text-secondary-text font-mono">{adminEmail}</span>
             </div>
             <h1 className="text-3xl font-extrabold text-heading font-display">
-              Dashboard Overview
+              {getPageTitle()}
             </h1>
           </div>
 
@@ -230,211 +297,452 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* DASHBOARD STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DashboardCard
-            title="Total Certificates"
-            value={stats.totalCertificates.toLocaleString()}
-            subtitle="Issued academic credentials"
-            icon={FileCheck}
-            color="primary"
-          />
+        {/* ─── TAB 1: DASHBOARD OVERVIEW ─── */}
+        {activePath === '/admin/dashboard' && (
+          <div className="space-y-8">
+            {/* DASHBOARD STATS CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <DashboardCard
+                title="Total Certificates"
+                value={stats.totalCertificates.toLocaleString()}
+                subtitle="Issued academic credentials"
+                icon={FileCheck}
+                color="primary"
+              />
 
-          <DashboardCard
-            title="IPFS Certificates"
-            value={(stats.ipfsCertificates ?? stats.totalCertificates).toLocaleString()}
-            subtitle="Decentralized IPFS storage"
-            icon={HardDrive}
-            color="success"
-          />
+              <DashboardCard
+                title="IPFS Certificates"
+                value={(stats.ipfsCertificates ?? stats.totalCertificates).toLocaleString()}
+                subtitle="Decentralized IPFS storage"
+                icon={HardDrive}
+                color="success"
+              />
 
-          <DashboardCard
-            title="Blockchain Confirmed"
-            value={(stats.blockchainConfirmed ?? 0).toLocaleString()}
-            subtitle="Confirmed on Ethereum Sepolia"
-            icon={ShieldCheck}
-            color="primary"
-          />
+              <DashboardCard
+                title="Blockchain Confirmed"
+                value={(stats.blockchainConfirmed ?? 0).toLocaleString()}
+                subtitle="Confirmed on Ethereum Sepolia"
+                icon={ShieldCheck}
+                color="primary"
+              />
 
-          <DashboardCard
-            title="Verification Queries"
-            value={stats.totalVerifications.toLocaleString()}
-            subtitle="Public verification attempts"
-            icon={History}
-            color="neutral"
-          />
-        </div>
-
-        {/* CERTIFICATES REGISTRY TABLE SECTION */}
-        <div className="bg-surface rounded-3xl border border-border p-6 md:p-8 shadow-sm space-y-6">
-          
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-heading">
-                Institutional Certificates Registry
-              </h3>
-              <p className="text-xs text-secondary-text">
-                Manage certificate records, view IPFS CIDs, and register credentials on Ethereum Sepolia.
-              </p>
+              <DashboardCard
+                title="Verification Queries"
+                value={stats.totalVerifications.toLocaleString()}
+                subtitle="Public verification attempts"
+                icon={History}
+                color="neutral"
+              />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              {/* Search bar */}
-              <div className="relative flex-1 md:w-64">
-                <Search className="w-4 h-4 text-secondary-text absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search student, ID, or IPFS CID..."
-                  className="w-full pl-9 pr-4 py-2 bg-page-bg rounded-xl border border-border text-xs font-semibold text-heading focus:outline-none focus:border-primary-teal"
-                />
+            {/* Quick Actions & Recent Certificates snippet */}
+            <div className="bg-surface rounded-3xl border border-border p-6 md:p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-heading">
+                    Recent Issued Certificates
+                  </h3>
+                  <p className="text-xs text-secondary-text">
+                    Overview of latest credentials recorded in institutional MongoDB registry.
+                  </p>
+                </div>
+
+                <Link
+                  to="/admin/certificates"
+                  className="px-4 py-2 bg-page-bg hover:bg-primary-teal/10 text-primary-teal font-bold text-xs rounded-xl border border-border transition-all flex items-center gap-1.5"
+                >
+                  View All Certificates <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
-              {/* Status filter */}
-              <div className="flex items-center gap-1 bg-page-bg p-1 rounded-xl border border-border text-xs font-bold">
-                <button
-                  onClick={() => setStatusFilter('ALL')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    statusFilter === 'ALL'
-                      ? 'bg-primary-teal text-white'
-                      : 'text-secondary-text hover:text-heading'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setStatusFilter('VALID')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    statusFilter === 'VALID'
-                      ? 'bg-success text-white'
-                      : 'text-secondary-text hover:text-heading'
-                  }`}
-                >
-                  Valid
-                </button>
-                <button
-                  onClick={() => setStatusFilter('REVOKED')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    statusFilter === 'REVOKED'
-                      ? 'bg-error text-white'
-                      : 'text-secondary-text hover:text-heading'
-                  }`}
-                >
-                  Revoked
-                </button>
-              </div>
+              {isLoading ? (
+                <div className="py-12 text-center text-secondary-text space-y-3">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-teal" />
+                  <p className="text-xs font-semibold">Querying records...</p>
+                </div>
+              ) : certificates.length === 0 ? (
+                <div className="py-12 text-center text-secondary-text space-y-3 border-2 border-dashed border-border rounded-2xl">
+                  <FolderOpen className="w-10 h-10 mx-auto text-secondary-text/50" />
+                  <p className="text-sm font-bold text-heading">No Certificates Issued Yet</p>
+                  <p className="text-xs">Click "Issue New Certificate" above to generate your first credential.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
+                        <th className="py-3 px-4">Certificate ID</th>
+                        <th className="py-3 px-4">Student Recipient</th>
+                        <th className="py-3 px-4">Storage / IPFS</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4">Blockchain</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border text-xs font-medium">
+                      {certificates.slice(0, 5).map((cert) => {
+                        const certNum = cert.certificateId || cert.certificateNumber || '';
+                        const studentName = cert.recipientName || cert.studentName || '';
+                        const cid = cert.ipfsCid || cert.ipfsHash || null;
+
+                        return (
+                          <tr key={cert.id || cert._id || certNum} className="hover:bg-page-bg/50 transition-colors">
+                            <td className="py-4 px-4 font-mono font-bold text-primary-teal">
+                              {certNum}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className="font-bold text-heading block">{studentName}</span>
+                              <span className="text-[11px] text-secondary-text">{cert.recipientEmail}</span>
+                            </td>
+                            <td className="py-4 px-4">
+                              {cid ? (
+                                <a
+                                  href={cert.ipfsGatewayUrl && !cert.ipfsGatewayUrl.includes('gateway.pinata.cloud') ? cert.ipfsGatewayUrl : `https://ipfs.io/ipfs/${cid}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-mono text-[11px] text-heading hover:text-primary-teal font-semibold inline-flex items-center gap-1"
+                                >
+                                  {cid.slice(0, 8)}...{cid.slice(-4)} <ExternalLink className="w-3 h-3 text-secondary-text" />
+                                </a>
+                              ) : (
+                                <span className="text-[11px] text-secondary-text">Local PDF</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4">
+                              <StatusBadge status={cert.status} size="sm" />
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                cert.blockchainStatus === 'CONFIRMED'
+                                  ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
+                                  : 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30'
+                              }`}>
+                                {cert.blockchainStatus === 'CONFIRMED' ? '🟢 BLOCK CREATED' : 'NOT REGISTERED'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <Link
+                                to={`/verify/number?id=${encodeURIComponent(certNum)}`}
+                                className="px-2.5 py-1 bg-page-bg hover:bg-primary-teal/10 text-primary-teal text-xs font-bold rounded-lg border border-border inline-flex items-center gap-1 transition-all"
+                              >
+                                Verify <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          {/* Table view */}
-          {isLoading ? (
-            <div className="py-16 text-center text-secondary-text space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-teal" />
-              <p className="text-xs font-semibold">Querying MongoDB institutional records...</p>
+        {/* ─── TAB 2: CERTIFICATES REGISTRY ─── */}
+        {activePath === '/admin/certificates' && (
+          <div className="bg-surface rounded-3xl border border-border p-6 md:p-8 shadow-sm space-y-6">
+            
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold text-heading">
+                  Institutional Certificates Registry
+                </h3>
+                <p className="text-xs text-secondary-text">
+                  Manage certificate records, view IPFS CIDs, and register credentials on Ethereum Sepolia.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                {/* Search bar */}
+                <div className="relative flex-1 md:w-64">
+                  <Search className="w-4 h-4 text-secondary-text absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search student, ID, or IPFS CID..."
+                    className="w-full pl-9 pr-4 py-2 bg-page-bg rounded-xl border border-border text-xs font-semibold text-heading focus:outline-none focus:border-primary-teal"
+                  />
+                </div>
+
+                {/* Status filter */}
+                <div className="flex items-center gap-1 bg-page-bg p-1 rounded-xl border border-border text-xs font-bold">
+                  <button
+                    onClick={() => setStatusFilter('ALL')}
+                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                      statusFilter === 'ALL'
+                        ? 'bg-primary-teal text-white'
+                        : 'text-secondary-text hover:text-heading'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('VALID')}
+                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                      statusFilter === 'VALID'
+                        ? 'bg-success text-white'
+                        : 'text-secondary-text hover:text-heading'
+                    }`}
+                  >
+                    Valid
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('REVOKED')}
+                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                      statusFilter === 'REVOKED'
+                        ? 'bg-error text-white'
+                        : 'text-secondary-text hover:text-heading'
+                    }`}
+                  >
+                    Revoked
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : certificates.length === 0 ? (
-            <div className="py-16 text-center text-secondary-text space-y-3 border-2 border-dashed border-border rounded-2xl">
-              <FolderOpen className="w-10 h-10 mx-auto text-secondary-text/50" />
-              <p className="text-sm font-bold text-heading">No Certificates Found</p>
-              <p className="text-xs">No records match your active search or status filter.</p>
+
+            {/* Table view */}
+            {isLoading ? (
+              <div className="py-16 text-center text-secondary-text space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-teal" />
+                <p className="text-xs font-semibold">Querying MongoDB institutional records...</p>
+              </div>
+            ) : certificates.length === 0 ? (
+              <div className="py-16 text-center text-secondary-text space-y-3 border-2 border-dashed border-border rounded-2xl">
+                <FolderOpen className="w-10 h-10 mx-auto text-secondary-text/50" />
+                <p className="text-sm font-bold text-heading">No Certificates Found</p>
+                <p className="text-xs">No records match your active search or status filter.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
+                      <th className="py-3 px-4">Certificate ID</th>
+                      <th className="py-3 px-4">Student Recipient</th>
+                      <th className="py-3 px-4">Storage / IPFS CID</th>
+                      <th className="py-3 px-4">SHA-256 Hash</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Blockchain Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border text-xs font-medium">
+                    {certificates.map((cert) => {
+                      const certNum = cert.certificateId || cert.certificateNumber || '';
+                      const studentName = cert.recipientName || cert.studentName || '';
+                      const cid = cert.ipfsCid || cert.ipfsHash || null;
+                      const storage = cert.storageType || (cid ? 'IPFS' : 'LOCAL');
+                      const fileHash = cert.fileHash || '';
+
+                      return (
+                        <tr key={cert.id || cert._id || certNum} className="hover:bg-page-bg/50 transition-colors">
+                          <td className="py-4 px-4 font-mono font-bold text-primary-teal">
+                            {certNum}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="font-bold text-heading block">{studentName}</span>
+                            <span className="text-[11px] text-secondary-text">{cert.recipientEmail}</span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="px-2 py-0.5 rounded bg-primary-teal/10 text-primary-teal text-[10px] font-bold border border-primary-teal/30 inline-block mb-1">
+                              {storage}
+                            </span>
+                            {cid ? (
+                              <a
+                                href={cert.ipfsGatewayUrl && !cert.ipfsGatewayUrl.includes('gateway.pinata.cloud') ? cert.ipfsGatewayUrl : `https://ipfs.io/ipfs/${cid}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-[11px] text-heading hover:text-primary-teal font-semibold flex items-center gap-1 block"
+                              >
+                                {cid.slice(0, 10)}...{cid.slice(-6)} <ExternalLink className="w-3 h-3 text-secondary-text" />
+                              </a>
+                            ) : (
+                              <span className="text-[11px] text-secondary-text block">Local PDF</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {fileHash ? (
+                              <div className="flex items-center gap-1 font-mono text-[11px] text-secondary-text">
+                                <span>{fileHash.slice(0, 8)}...{fileHash.slice(-6)}</span>
+                                <button
+                                  onClick={() => handleCopy(fileHash)}
+                                  className="p-1 hover:text-primary-teal cursor-pointer"
+                                  title="Copy SHA-256 Hash"
+                                >
+                                  {copiedHash === fileHash ? (
+                                    <CheckCheck className="w-3.5 h-3.5 text-success" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-secondary-text">-</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            <StatusBadge status={cert.status} size="sm" />
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                              cert.blockchainStatus === 'CONFIRMED'
+                                ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
+                                : cert.blockchainStatus === 'FAILED'
+                                ? 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
+                                : 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30'
+                            }`}>
+                              {cert.blockchainStatus === 'CONFIRMED' ? '🟢 BLOCK CREATED' : (cert.blockchainStatus || 'NOT REGISTERED')}
+                            </span>
+                          </td>
+
+                          <td className="py-4 px-4 text-right space-x-2">
+                            {cert.blockchainStatus !== 'CONFIRMED' && cert.status === 'VALID' && (
+                              <button
+                                onClick={() => setBlockchainRegisterTarget(cert)}
+                                className="px-2.5 py-1 bg-[#38BDF8]/10 hover:bg-[#38BDF8] text-[#38BDF8] hover:text-slate-950 text-xs font-bold rounded-lg border border-[#38BDF8]/30 transition-all cursor-pointer"
+                              >
+                                Register Chain
+                              </button>
+                            )}
+
+                            <Link
+                              to={`/verify/number?id=${encodeURIComponent(certNum)}`}
+                              className="px-2.5 py-1 bg-page-bg hover:bg-primary-teal/10 text-primary-teal text-xs font-bold rounded-lg border border-border inline-flex items-center gap-1 transition-all"
+                            >
+                              Verify <ExternalLink className="w-3 h-3" />
+                            </Link>
+
+                            {cert.status === 'VALID' && (
+                              <button
+                                onClick={() => setRevokeTarget(cert)}
+                                className="px-2.5 py-1 bg-error/10 hover:bg-error text-error hover:text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                              >
+                                Revoke
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB 3: VERIFICATION LOGS ─── */}
+        {activePath === '/admin/verification-logs' && (
+          <div className="bg-surface rounded-3xl border border-border p-6 md:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold text-heading flex items-center gap-2">
+                  <History className="w-5 h-5 text-primary-teal" /> Public Verification Audit Trail
+                </h3>
+                <p className="text-xs text-secondary-text">
+                  Complete audit log of all public certificate verification attempts (QR, Number, PDF SHA-256).
+                </p>
+              </div>
+
+              <button
+                onClick={fetchVerificationLogs}
+                disabled={isLoadingLogs}
+                className="px-3.5 py-2 bg-page-bg hover:bg-border/50 text-heading font-bold text-xs rounded-xl border border-border transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-primary-teal ${isLoadingLogs ? 'animate-spin' : ''}`} />
+                Refresh Logs
+              </button>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
-                    <th className="py-3 px-4">Certificate ID</th>
-                    <th className="py-3 px-4">Student Recipient</th>
-                    <th className="py-3 px-4">Storage / IPFS CID</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Blockchain Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border text-xs font-medium">
-                  {certificates.map((cert) => {
-                    const certNum = cert.certificateId || cert.certificateNumber || '';
-                    const studentName = cert.recipientName || cert.studentName || '';
-                    const cid = cert.ipfsCid || cert.ipfsHash || null;
-                    const storage = cert.storageType || (cid ? 'IPFS' : 'LOCAL');
 
-                    return (
-                      <tr key={cert.id || cert._id || certNum} className="hover:bg-page-bg/50 transition-colors">
-                        <td className="py-4 px-4 font-mono font-bold text-primary-teal">
-                          {certNum}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="font-bold text-heading block">{studentName}</span>
-                          <span className="text-[11px] text-secondary-text">{cert.recipientEmail}</span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="px-2 py-0.5 rounded bg-primary-teal/10 text-primary-teal text-[10px] font-bold border border-primary-teal/30 inline-block mb-1">
-                            {storage}
-                          </span>
-                          {cid ? (
-                            <a
-                              href={cert.ipfsGatewayUrl && !cert.ipfsGatewayUrl.includes('gateway.pinata.cloud') ? cert.ipfsGatewayUrl : `https://ipfs.io/ipfs/${cid}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-mono text-[11px] text-heading hover:text-primary-teal font-semibold flex items-center gap-1 block"
-                            >
-                              {cid.slice(0, 10)}...{cid.slice(-6)} <ExternalLink className="w-3 h-3 text-secondary-text" />
-                            </a>
-                          ) : (
-                            <span className="text-[11px] text-secondary-text block">Local PDF</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4">
-                          <StatusBadge status={cert.status} size="sm" />
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                            cert.blockchainStatus === 'CONFIRMED'
-                              ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                              : cert.blockchainStatus === 'FAILED'
-                              ? 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
-                              : 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30'
-                          }`}>
-                            {cert.blockchainStatus === 'CONFIRMED' ? '🟢 BLOCK CREATED' : (cert.blockchainStatus || 'NOT REGISTERED')}
-                          </span>
-                        </td>
+            {isLoadingLogs ? (
+              <div className="py-16 text-center text-secondary-text space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-teal" />
+                <p className="text-xs font-semibold">Loading verification audit logs from MongoDB...</p>
+              </div>
+            ) : verificationLogs.length === 0 ? (
+              <div className="py-16 text-center text-secondary-text space-y-3 border-2 border-dashed border-border rounded-2xl">
+                <History className="w-10 h-10 mx-auto text-secondary-text/50" />
+                <p className="text-sm font-bold text-heading">No Verification Logs Recorded</p>
+                <p className="text-xs">When users or students verify certificates via QR code, ID, or PDF, attempts will appear here.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
+                      <th className="py-3 px-4">Timestamp</th>
+                      <th className="py-3 px-4">Certificate ID / Input</th>
+                      <th className="py-3 px-4">Method</th>
+                      <th className="py-3 px-4">Client IP</th>
+                      <th className="py-3 px-4">Verification Result</th>
+                      <th className="py-3 px-4">Blockchain Audit</th>
+                      <th className="py-3 px-4 text-right">Latency</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border text-xs font-medium">
+                    {verificationLogs.map((log, idx) => {
+                      const dateStr = log.verifiedAt || log.createdAt
+                        ? new Date(log.verifiedAt || log.createdAt).toLocaleString()
+                        : 'Just now';
 
-                        <td className="py-4 px-4 text-right space-x-2">
-                          {cert.blockchainStatus !== 'CONFIRMED' && cert.status === 'VALID' && (
-                            <button
-                              onClick={() => setBlockchainRegisterTarget(cert)}
-                              className="px-2.5 py-1 bg-[#38BDF8]/10 hover:bg-[#38BDF8] text-[#38BDF8] hover:text-slate-950 text-xs font-bold rounded-lg border border-[#38BDF8]/30 transition-all cursor-pointer"
-                            >
-                              Register Chain
-                            </button>
-                          )}
+                      const method = log.verificationMethod || 'CERTIFICATE_NUMBER';
+                      const result = log.result || 'VALID';
+                      const certId = log.certificateId || 'PDF Hash Check';
+                      const ip = log.ipAddress || '127.0.0.1';
+                      const latency = log.responseTimeMs ? `${log.responseTimeMs}ms` : '< 50ms';
 
-                          <Link
-                            to={`/verify/number?id=${encodeURIComponent(certNum)}`}
-                            className="px-2.5 py-1 bg-page-bg hover:bg-primary-teal/10 text-primary-teal text-xs font-bold rounded-lg border border-border inline-flex items-center gap-1 transition-all"
-                          >
-                            Verify <ExternalLink className="w-3 h-3" />
-                          </Link>
-
-                          {cert.status === 'VALID' && (
-                            <button
-                              onClick={() => setRevokeTarget(cert)}
-                              className="px-2.5 py-1 bg-error/10 hover:bg-error text-error hover:text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
-                            >
-                              Revoke
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-        </div>
+                      return (
+                        <tr key={log._id || idx} className="hover:bg-page-bg/50 transition-colors">
+                          <td className="py-4 px-4 font-mono text-[11px] text-secondary-text whitespace-nowrap">
+                            {dateStr}
+                          </td>
+                          <td className="py-4 px-4 font-mono font-bold text-heading">
+                            {certId}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="px-2 py-0.5 rounded bg-surface border border-border font-bold text-[10px] text-heading uppercase">
+                              {method.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 font-mono text-[11px] text-secondary-text">
+                            {ip}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                              result === 'VALID'
+                                ? 'bg-success/10 text-success border-success/30'
+                                : result === 'REVOKED'
+                                ? 'bg-error/10 text-error border-error/30'
+                                : result === 'INTEGRITY_WARNING'
+                                ? 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30'
+                                : 'bg-secondary-text/10 text-secondary-text border-secondary-text/30'
+                            }`}>
+                              {result === 'VALID' ? '🟢 AUTHENTIC' : result === 'REVOKED' ? '🔴 REVOKED' : result}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            {log.blockchainChecked ? (
+                              <span className="text-[11px] text-success font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Sepolia Verified
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-secondary-text">DB Query Only</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-right font-mono text-[11px] text-secondary-text">
+                            {latency}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Modal for Issue New Certificate Form */}
         {showIssueModal && (
@@ -625,7 +933,7 @@ export const AdminDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => setBlockchainRegisterTarget(null)}
-                className="w-full py-2.5 bg-[#112240] border border-[#233554] text-slate-300 hover:text-white font-bold text-xs rounded-xl transition-all"
+                className="w-full py-2.5 bg-[#112240] border border-[#233554] text-slate-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
               >
                 Close
               </button>
@@ -686,3 +994,5 @@ export const AdminDashboardPage: React.FC = () => {
     </div>
   );
 };
+
+export default AdminDashboardPage;

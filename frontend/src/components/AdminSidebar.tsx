@@ -5,9 +5,9 @@ import {
   LayoutDashboard,
   FileCheck,
   History,
-  Settings,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Building2
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -15,19 +15,31 @@ import { useAuth } from '../context/AuthContext';
 export const AdminSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  const isSuperAdmin =
+    user?.role === 'SUPER_ADMIN' ||
+    sessionStorage.getItem('ecv_user_role') === 'SUPER_ADMIN' ||
+    sessionStorage.getItem('ecv_admin_role') === 'SUPER_ADMIN';
 
   const handleLogout = () => {
     logout();
-    navigate('/admin/login');
+    navigate('/');
   };
 
   const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Certificates', path: '/admin/dashboard', icon: FileCheck },
-    { label: 'Verification Logs', path: '/admin/dashboard', icon: History },
-    { label: 'Settings', path: '/admin/dashboard', icon: Settings }
+    { label: 'Certificates', path: '/admin/certificates', icon: FileCheck },
+    { label: 'Verification Logs', path: '/admin/verification-logs', icon: History }
   ];
+
+  if (isSuperAdmin) {
+    navItems.push({
+      label: 'Institution Management Console',
+      path: '/super-admin/dashboard',
+      icon: Building2
+    });
+  }
 
   return (
     <aside className="w-64 bg-[#112240] border-r border-[#1E293B] text-white flex flex-col justify-between shrink-0 min-h-screen">
@@ -46,7 +58,7 @@ export const AdminSidebar: React.FC = () => {
 
           {navItems.map((item, idx) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path && idx === 0;
+            const isActive = location.pathname === item.path;
             return (
               <Link
                 key={idx}
