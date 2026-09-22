@@ -31,6 +31,11 @@ export interface Certificate {
   blockchainCertificateHash?: string | null;
   blockchainIssuer?: string | null;
   blockchainRegisteredAt?: string | null;
+  ipfsCid?: string | null;
+  ipfsGatewayUrl?: string | null;
+  ipfsHash?: string | null;
+  ipfsUrl?: string | null;
+  storageType?: 'IPFS' | 'LOCAL';
 }
 
 export interface CertificateListResponse {

@@ -1,16 +1,25 @@
 import { Schema, model, Document } from 'mongoose';
 
 export type VerificationMethodType = 'CERTIFICATE_NUMBER' | 'PDF' | 'QR';
-export type VerificationResultType = 'VALID' | 'INVALID' | 'REVOKED' | 'NOT_FOUND' | 'HASH_MISMATCH';
+export type VerificationResultType =
+  | 'VALID'
+  | 'INVALID'
+  | 'REVOKED'
+  | 'NOT_FOUND'
+  | 'HASH_MISMATCH'
+  | 'INTEGRITY_WARNING';
 
 export interface IVerificationLog extends Document {
   certificateId?: string | null;
+  institutionId?: Schema.Types.ObjectId | string | null;
   verificationMethod: VerificationMethodType;
   result: VerificationResultType;
   verifiedAt: Date;
   ipAddress: string;
   userAgent: string;
   responseTimeMs?: number | null;
+  blockchainChecked?: boolean;
+  blockchainResult?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +30,12 @@ const verificationLogSchema = new Schema<IVerificationLog>(
       type: String,
       default: null,
     },
+    institutionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Institution',
+      default: null,
+      index: true,
+    },
     verificationMethod: {
       type: String,
       enum: ['CERTIFICATE_NUMBER', 'PDF', 'QR'],
@@ -28,7 +43,7 @@ const verificationLogSchema = new Schema<IVerificationLog>(
     },
     result: {
       type: String,
-      enum: ['VALID', 'INVALID', 'REVOKED', 'NOT_FOUND', 'HASH_MISMATCH'],
+      enum: ['VALID', 'INVALID', 'REVOKED', 'NOT_FOUND', 'HASH_MISMATCH', 'INTEGRITY_WARNING'],
       required: true,
     },
     verifiedAt: {
@@ -45,6 +60,14 @@ const verificationLogSchema = new Schema<IVerificationLog>(
     },
     responseTimeMs: {
       type: Number,
+      default: null,
+    },
+    blockchainChecked: {
+      type: Boolean,
+      default: false,
+    },
+    blockchainResult: {
+      type: Schema.Types.Mixed,
       default: null,
     },
   },

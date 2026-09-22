@@ -5,7 +5,9 @@ export type VerificationResultStatus =
   | 'INVALID'
   | 'REVOKED'
   | 'NOT_FOUND'
-  | 'HASH_MISMATCH';
+  | 'HASH_MISMATCH'
+  | 'INTEGRITY_WARNING'
+  | 'BLOCKCHAIN_MISMATCH';
 
 export interface VerificationResultData {
   success?: boolean;

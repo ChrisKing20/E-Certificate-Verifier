@@ -1,14 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import { getDashboardStats } from '../services/dashboardService';
-import { retryBlockchainRegistration } from '../services/certificateService';
+import { retryBlockchainRegistration, migrateLocalCertificatesToIPFS } from '../services/certificateService';
+import { AuthRequest } from '../types';
 
 export const handleGetDashboardStats = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const stats = await getDashboardStats();
+    const authReq = req as AuthRequest;
+    const user = authReq.user || authReq.admin;
+    const stats = await getDashboardStats({
+      institutionId: user?.institutionId || null,
+      role: user?.role,
+    });
 
     res.status(200).json({
       success: true,
@@ -38,3 +44,21 @@ export const handleRetryBlockchainRegister = async (
     next(error);
   }
 };
+
+export const handleMigrateIpfs = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await migrateLocalCertificatesToIPFS();
+    res.status(200).json({
+      success: true,
+      message: 'Local certificate migration to IPFS completed successfully.',
+      result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

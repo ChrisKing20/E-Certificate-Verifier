@@ -8,6 +8,8 @@ import authRoutes from './routes/authRoutes';
 import certificateRoutes from './routes/certificateRoutes';
 import verificationRoutes from './routes/verificationRoutes';
 import adminRoutes from './routes/adminRoutes';
+import institutionRoutes from './routes/institutionRoutes';
+import userRoutes from './routes/userRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app: Application = express();
@@ -19,6 +21,11 @@ connectDB();
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false, // Disable default CSP so API & gateway resources load cleanly
+    frameguard: { action: 'deny' },
+    xssFilter: true,
+    noSniff: true,
+    hidePoweredBy: true,
   })
 );
 app.use(
@@ -37,7 +44,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/institutions', institutionRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/verify', verificationRoutes);
 app.use('/api/admin', adminRoutes);
 

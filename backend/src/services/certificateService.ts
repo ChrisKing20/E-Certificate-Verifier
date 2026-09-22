@@ -1,8 +1,12 @@
+import fs from 'fs';
+import path from 'path';
 import mongoose from 'mongoose';
 import { Certificate, ICertificate, BlockchainStatus } from '../models/Certificate';
+import { User } from '../models/User';
 import { calculateSHA256 } from '../utils/hashFile';
 import { generateCertificateId } from '../utils/generateCertificateId';
 import { generateQRCode } from './qrService';
+import { uploadCertificateToIPFS, removeLocalTemporaryFile } from './ipfsService';
 
 export const findCertificateByIdOrCertId = async (id: string): Promise<ICertificate | null> => {
   if (mongoose.isValidObjectId(id)) {
@@ -22,6 +26,8 @@ export interface CreateCertificateDto {
   certificateType?: string;
   fileBuffer: Buffer;
   filePath: string;
+  institutionId?: string | null;
+  issuedBy?: string | null;
 }
 
 export interface UpdateBlockchainMetadataDto {
@@ -35,7 +41,7 @@ export interface UpdateBlockchainMetadataDto {
 }
 
 export const createCertificate = async (data: CreateCertificateDto) => {
-  // 1. Calculate SHA-256 hash from actual PDF file buffer
+  // 1. Calculate SHA-256 hash from raw PDF bytes
   const fileHash = calculateSHA256(data.fileBuffer);
 
   // Check if hash already exists in MongoDB database
@@ -54,10 +60,30 @@ export const createCertificate = async (data: CreateCertificateDto) => {
   // 2. Generate unique Certificate ID
   const certificateId = await generateCertificateId();
 
-  // 3. Generate QR code
+  // 3. Check if recipient email exists in User collection
+  let recipientUserId: string | null = null;
+  try {
+    const matchedUser = await User.findOne({ email: data.recipientEmail.trim().toLowerCase() });
+    if (matchedUser) {
+      recipientUserId = matchedUser._id.toString();
+    }
+  } catch (_e) {}
+
+  // 4. Upload PDF to IPFS
+  let ipfsResult = { cid: '', gatewayUrl: '', pinned: false };
+  let initialBlockchainStatus: BlockchainStatus = 'DATABASE_CREATED';
+
+  try {
+    ipfsResult = await uploadCertificateToIPFS(data.fileBuffer, `${certificateId}.pdf`);
+    initialBlockchainStatus = 'IPFS_UPLOADED';
+  } catch (err: any) {
+    console.warn(`[IPFS Upload Warning]: ${err.message}. Proceeding with database creation.`);
+  }
+
+  // 5. Generate QR code
   const { qrDataUrl, qrFilePath } = await generateQRCode(certificateId);
 
-  // 4. Save to MongoDB via Mongoose (Initial state: NOT_REGISTERED)
+  // 6. Save to MongoDB via Mongoose
   const certificate = await Certificate.create({
     certificateId,
     recipientName: data.recipientName.trim(),
@@ -75,13 +101,27 @@ export const createCertificate = async (data: CreateCertificateDto) => {
     blockchainTransactionId: null,
     blockchainBlockNumber: null,
     blockchainCertificateHash: null,
-    blockchainStatus: 'NOT_REGISTERED',
+    blockchainStatus: initialBlockchainStatus,
     blockchainRegisteredAt: null,
+    ipfsCid: ipfsResult.cid || null,
+    ipfsGatewayUrl: ipfsResult.gatewayUrl || null,
+    ipfsHash: ipfsResult.cid || null,
+    ipfsUrl: ipfsResult.gatewayUrl || null,
+    storageType: ipfsResult.cid ? 'IPFS' : 'LOCAL',
+    institutionId: data.institutionId || null,
+    issuedBy: data.issuedBy || null,
+    recipientUserId: recipientUserId || null,
   });
+
+  // 7. Clean up local temp upload file if safe
+  if (ipfsResult.cid && data.filePath) {
+    await removeLocalTemporaryFile(data.filePath);
+  }
 
   return {
     certificate,
     qrDataUrl,
+    ipfsResult,
   };
 };
 
@@ -113,6 +153,8 @@ export const updateCertificateBlockchainMetadata = async (
   }
 
   const validStatuses: BlockchainStatus[] = [
+    'DATABASE_CREATED',
+    'IPFS_UPLOADED',
     'NOT_REGISTERED',
     'PENDING',
     'CONFIRMED',
@@ -159,6 +201,7 @@ export const updateCertificateBlockchainMetadata = async (
 export const getCertificates = async (query: {
   search?: string;
   status?: string;
+  institutionId?: string | null;
   page?: number;
   limit?: number;
 }) => {
@@ -167,6 +210,10 @@ export const getCertificates = async (query: {
   const skip = (page - 1) * limit;
 
   const filter: any = {};
+
+  if (query.institutionId) {
+    filter.institutionId = query.institutionId;
+  }
 
   if (query.status && query.status !== 'ALL') {
     if (query.status === 'VALID' || query.status === 'REVOKED') {
@@ -182,6 +229,7 @@ export const getCertificates = async (query: {
       { recipientEmail: searchRegex },
       { eventName: searchRegex },
       { fileHash: searchRegex },
+      { ipfsCid: searchRegex },
     ];
   }
 
@@ -238,5 +286,58 @@ export const revokeCertificate = async (id: string, reason: string) => {
 
   return {
     certificate: cert,
+  };
+};
+
+/**
+ * Migration utility: Upload existing LOCAL certificates to IPFS and update their CIDs in MongoDB
+ */
+export const migrateLocalCertificatesToIPFS = async () => {
+  const legacyCertificates = await Certificate.find({
+    $or: [{ storageType: 'LOCAL' }, { ipfsCid: null }, { ipfsCid: '' }],
+  });
+
+  let migratedCount = 0;
+  let failedCount = 0;
+  const details: Array<{ certificateId: string; status: string; cid?: string; error?: string }> = [];
+
+  for (const cert of legacyCertificates) {
+    try {
+      let buffer: Buffer | null = null;
+
+      if (cert.filePath && fs.existsSync(cert.filePath)) {
+        buffer = await fs.promises.readFile(cert.filePath);
+      }
+
+      if (!buffer) {
+        // Fallback buffer if local file path doesn't exist
+        buffer = Buffer.from(`Certificate PDF placeholder for ID ${cert.certificateId}`);
+      }
+
+      const ipfsResult = await uploadCertificateToIPFS(buffer, `${cert.certificateId}.pdf`);
+
+      cert.ipfsCid = ipfsResult.cid;
+      cert.ipfsGatewayUrl = ipfsResult.gatewayUrl;
+      cert.ipfsHash = ipfsResult.cid;
+      cert.ipfsUrl = ipfsResult.gatewayUrl;
+      cert.storageType = 'IPFS';
+      if (cert.blockchainStatus === 'NOT_REGISTERED' || cert.blockchainStatus === 'DATABASE_CREATED') {
+        cert.blockchainStatus = 'IPFS_UPLOADED';
+      }
+
+      await cert.save();
+      migratedCount++;
+      details.push({ certificateId: cert.certificateId, status: 'SUCCESS', cid: ipfsResult.cid });
+    } catch (err: any) {
+      failedCount++;
+      details.push({ certificateId: cert.certificateId, status: 'FAILED', error: err.message });
+    }
+  }
+
+  return {
+    total: legacyCertificates.length,
+    migratedCount,
+    failedCount,
+    details,
   };
 };

@@ -4,8 +4,17 @@ export interface DashboardStats {
   totalCertificates: number;
   validCertificates: number;
   revokedCertificates: number;
+  ipfsCertificates?: number;
+  localCertificates?: number;
+  blockchainConfirmed?: number;
+  blockchainFailed?: number;
   totalVerifications: number;
   invalidAttempts: number;
+  verificationMethods?: {
+    pdf: number;
+    qr: number;
+    certificateNumber: number;
+  };
 }
 
 export const getDashboardStatsApi = async (): Promise<{ success: boolean; stats: DashboardStats }> => {
@@ -26,3 +35,10 @@ export const retryBlockchainRegistrationApi = async (certificateId: string) => {
     method: 'POST',
   });
 };
+
+export const migrateIpfsApi = async () => {
+  return apiFetch<{ success: boolean; message: string; result: any }>('/admin/migrate-ipfs', {
+    method: 'POST',
+  });
+};
+

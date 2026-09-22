@@ -15,7 +15,9 @@ import {
   ShieldCheck,
   Clock,
   Layers,
-  Info
+  Info,
+  ExternalLink,
+  HardDrive
 } from 'lucide-react';
 
 interface VerificationResultProps {
@@ -28,6 +30,7 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
   onReset
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedCid, setCopiedCid] = useState(false);
   const { status, certificate, reason, duplicateNotice, verifiedAt } = result;
 
   const handleCopyHash = (text: string) => {
@@ -36,10 +39,87 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyCid = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCid(true);
+    setTimeout(() => setCopiedCid(false), 2000);
+  };
+
   const certNumber = certificate?.certificateId || certificate?.certificateNumber || '';
   const recipientName = certificate?.recipientName || certificate?.studentName || '';
   const hashString = certificate?.fileHash || certificate?.hash || '';
   const issuerName = certificate?.issuer || 'Academic Institution';
+  const ipfsCid = certificate?.ipfsCid || certificate?.ipfsHash || null;
+  const ipfsUrl = certificate?.ipfsGatewayUrl || certificate?.ipfsUrl || (ipfsCid ? `https://gateway.pinata.cloud/ipfs/${ipfsCid}` : null);
+  const storageType = certificate?.storageType || (ipfsCid ? 'IPFS' : 'LOCAL');
+
+  // 0. INTEGRITY WARNING STATE (Discrepancy between MongoDB & Ethereum)
+  if (status === 'INTEGRITY_WARNING') {
+    return (
+      <div className="w-full max-w-3xl mx-auto bg-surface rounded-3xl border-2 border-amber-500 p-6 md:p-8 shadow-xl space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-border">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/30">
+              <AlertTriangle className="w-10 h-10" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 font-extrabold text-xs border border-amber-500/30">
+                  INTEGRITY WARNING
+                </span>
+                <span className="text-xs text-secondary-text font-medium flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-primary-teal" /> Verified {verifiedAt}
+                </span>
+              </div>
+              <h3 className="text-2xl font-extrabold text-heading">
+                ⚠️ Verification Discrepancy Flagged
+              </h3>
+              <p className="text-sm font-semibold text-amber-500 mt-0.5">
+                MongoDB database and Ethereum Blockchain states disagree.
+              </p>
+            </div>
+          </div>
+
+          {onReset && (
+            <button
+              onClick={onReset}
+              className="px-4 py-2 bg-page-bg hover:bg-border/50 text-heading rounded-xl text-xs font-bold border border-border transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Try Another
+            </button>
+          )}
+        </div>
+
+        <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+          <span className="text-xs font-bold text-amber-500 uppercase tracking-wider block">
+            Integrity Discrepancy Details
+          </span>
+          <p className="text-sm font-semibold text-heading leading-relaxed">
+            {reason || 'A discrepancy was detected between MongoDB institutional database and Ethereum smart contract.'}
+          </p>
+        </div>
+
+        {certificate && (
+          <div className="p-5 rounded-2xl bg-page-bg border border-border space-y-3 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-text">Certificate ID</span>
+              <span className="font-mono font-bold text-heading">{certNumber}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-text">Student Recipient</span>
+              <span className="font-bold text-heading">{recipientName}</span>
+            </div>
+            {ipfsCid && (
+              <div className="flex justify-between items-center pt-2 border-t border-border">
+                <span className="text-secondary-text">IPFS CID</span>
+                <span className="font-mono font-bold text-primary-teal text-xs">{ipfsCid}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // 1. VALID STATE
   if (status === 'VALID' && certificate) {
@@ -63,7 +143,7 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
                 ✓ Certificate Authenticity Confirmed
               </h3>
               <p className="text-sm font-semibold text-success mt-0.5">
-                Verified against MongoDB institutional database.
+                Verified against MongoDB institutional database & Decentralized IPFS.
               </p>
             </div>
           </div>
@@ -154,15 +234,63 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
 
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-surface text-primary-teal border border-border">
-                <ShieldCheck className="w-4 h-4" />
+                <HardDrive className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs text-secondary-text block">Registry Status</span>
-                <span className="font-bold text-success uppercase">VALID & REGISTERED</span>
+                <span className="text-xs text-secondary-text block">Storage Model</span>
+                <span className="font-bold text-heading flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded bg-primary-teal/10 text-primary-teal text-xs border border-primary-teal/30">
+                    {storageType}
+                  </span>
+                  {storageType === 'IPFS' ? 'Decentralized IPFS Storage' : 'Local Institutional Storage'}
+                </span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* IPFS Certificate Document Access Card */}
+        {ipfsCid && (
+          <div className="p-5 rounded-2xl bg-surface border-2 border-primary-teal/30 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-primary-teal/10 text-primary-teal">
+                  <HardDrive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="font-bold text-sm text-heading flex items-center gap-2">
+                    IPFS Decentralized Storage CID
+                  </h5>
+                  <p className="text-xs text-secondary-text">
+                    Content Identifier (CID) for tamper-proof decentralized document retrieval.
+                  </p>
+                </div>
+              </div>
+
+              {ipfsUrl && (
+                <a
+                  href={ipfsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-primary-teal hover:bg-teal-600 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                >
+                  View Certificate <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between bg-page-bg p-3 rounded-xl border border-border text-xs font-mono">
+              <span className="truncate text-heading font-bold pr-2">{ipfsCid}</span>
+              <button
+                onClick={() => handleCopyCid(ipfsCid)}
+                className="text-primary-teal hover:underline flex items-center gap-1 font-sans shrink-0 cursor-pointer font-bold"
+              >
+                {copiedCid ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedCid ? 'Copied CID!' : 'Copy CID'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Verification Details Section */}
         <div className="p-5 rounded-2xl bg-[#0A192F] text-white space-y-5 border border-[#1E293B]">
@@ -204,7 +332,7 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
                 <CheckCircle2 className="w-4 h-4 shrink-0" /> SHA-256 Fingerprint Valid
               </div>
               <div className="flex items-center gap-1.5 text-[#10B981] font-semibold">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> Issuer Wallet Authenticated
+                <CheckCircle2 className="w-4 h-4 shrink-0" /> IPFS Storage Validated
               </div>
               <div className="flex items-center gap-1.5 text-[#10B981] font-semibold">
                 <CheckCircle2 className="w-4 h-4 shrink-0" /> Certificate Active & Not Revoked
@@ -410,3 +538,4 @@ export const VerificationResultComponent: React.FC<VerificationResultProps> = ({
     </div>
   );
 };
+

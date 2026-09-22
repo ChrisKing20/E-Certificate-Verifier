@@ -1,14 +1,20 @@
 import { Request } from 'express';
 
-export interface AdminPayload {
+export interface UserPayload {
   id: string;
+  userId?: string;
   name: string;
   email: string;
-  role: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'USER';
+  institutionId?: string | null;
 }
 
+export type AdminPayload = UserPayload;
+
 export interface AuthRequest extends Request {
-  admin?: AdminPayload;
+  user?: UserPayload;
+  admin?: UserPayload;
+  file?: any;
 }
 
 export interface ApiResponse<T = any> {

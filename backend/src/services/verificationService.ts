@@ -50,6 +50,7 @@ export const verifyByCertificateNumber = async (
         ipAddress,
         userAgent,
         responseTimeMs: Date.now() - startTime,
+        blockchainChecked: false,
       });
     } catch (_e) {}
 
@@ -65,15 +66,19 @@ export const verifyByCertificateNumber = async (
   // Check on-chain integrity if configured
   const chainCheck = await verifyCertificateOnChain(certificate.certificateId, certificate.fileHash);
 
-  let status = certificate.status === 'REVOKED' ? 'REVOKED' : 'VALID';
+  let status: any = certificate.status === 'REVOKED' ? 'REVOKED' : 'VALID';
+  let warningReason: string | undefined = undefined;
 
-  if (certificate.status !== 'REVOKED') {
-    if (chainCheck.isRegisteredOnChain) {
-      if (!chainCheck.onChainHashMatches) {
-        status = 'BLOCKCHAIN_MISMATCH';
-      } else if (chainCheck.isRevokedOnChain) {
-        status = 'REVOKED';
-      }
+  if (chainCheck.isRegisteredOnChain) {
+    if (!chainCheck.onChainHashMatches) {
+      status = 'INTEGRITY_WARNING';
+      warningReason = 'INTEGRITY WARNING: The document hash does not match the immutable hash on Ethereum blockchain!';
+    } else if (chainCheck.isRevokedOnChain && certificate.status !== 'REVOKED') {
+      status = 'INTEGRITY_WARNING';
+      warningReason = 'INTEGRITY WARNING: Blockchain record is REVOKED, but MongoDB status shows VALID!';
+    } else if (!chainCheck.isRevokedOnChain && certificate.status === 'REVOKED') {
+      status = 'INTEGRITY_WARNING';
+      warningReason = 'INTEGRITY WARNING: MongoDB status shows REVOKED, but Blockchain smart contract is still active!';
     }
   }
 
@@ -85,6 +90,8 @@ export const verifyByCertificateNumber = async (
       ipAddress,
       userAgent,
       responseTimeMs: Date.now() - startTime,
+      blockchainChecked: chainCheck.isRegisteredOnChain,
+      blockchainResult: chainCheck,
     });
   } catch (_e) {}
 
@@ -92,17 +99,16 @@ export const verifyByCertificateNumber = async (
     success: status === 'VALID' || status === 'REVOKED',
     status,
     message:
-      status === 'REVOKED'
+      status === 'INTEGRITY_WARNING'
+        ? 'INTEGRITY WARNING: Discrepancy detected between MongoDB database and Ethereum Blockchain status!'
+        : status === 'REVOKED'
         ? 'Certificate found but has been REVOKED.'
-        : status === 'BLOCKCHAIN_MISMATCH'
-        ? 'Blockchain Hash Mismatch Detected! Document integrity compromised.'
         : 'Certificate authenticity confirmed.',
     reason:
-      status === 'REVOKED'
+      warningReason ||
+      (status === 'REVOKED'
         ? certificate.revocationReason || 'This certificate was revoked by the issuing authority.'
-        : status === 'BLOCKCHAIN_MISMATCH'
-        ? 'The stored document hash does not match the Ethereum smart contract immutable record.'
-        : undefined,
+        : undefined),
     certificate: {
       certificateId: certificate.certificateId,
       recipientName: certificate.recipientName,
@@ -127,6 +133,9 @@ export const verifyByCertificateNumber = async (
       blockchainRegisteredAt: certificate.blockchainRegisteredAt
         ? certificate.blockchainRegisteredAt.toISOString()
         : null,
+      ipfsCid: certificate.ipfsCid || certificate.ipfsHash || null,
+      ipfsGatewayUrl: certificate.ipfsGatewayUrl || certificate.ipfsUrl || null,
+      storageType: certificate.storageType || (certificate.ipfsCid ? 'IPFS' : 'LOCAL'),
     },
     verifiedAt: verifiedAtStr,
   };
@@ -159,6 +168,7 @@ export const verifyByPdfHash = async (
         ipAddress,
         userAgent,
         responseTimeMs: Date.now() - startTime,
+        blockchainChecked: false,
       });
     } catch (_e) {}
 
@@ -180,15 +190,19 @@ export const verifyByPdfHash = async (
   } catch (_e) {}
 
   const chainCheck = await verifyCertificateOnChain(certificate.certificateId, calculatedHash);
-  let status = certificate.status === 'REVOKED' ? 'REVOKED' : 'VALID';
+  let status: any = certificate.status === 'REVOKED' ? 'REVOKED' : 'VALID';
+  let warningReason: string | undefined = undefined;
 
-  if (certificate.status !== 'REVOKED') {
-    if (chainCheck.isRegisteredOnChain) {
-      if (!chainCheck.onChainHashMatches) {
-        status = 'BLOCKCHAIN_MISMATCH';
-      } else if (chainCheck.isRevokedOnChain) {
-        status = 'REVOKED';
-      }
+  if (chainCheck.isRegisteredOnChain) {
+    if (!chainCheck.onChainHashMatches) {
+      status = 'INTEGRITY_WARNING';
+      warningReason = 'INTEGRITY WARNING: The PDF file SHA-256 hash does not match the immutable record on Ethereum!';
+    } else if (chainCheck.isRevokedOnChain && certificate.status !== 'REVOKED') {
+      status = 'INTEGRITY_WARNING';
+      warningReason = 'INTEGRITY WARNING: Blockchain record is REVOKED, but MongoDB status shows VALID!';
+    } else if (!chainCheck.isRevokedOnChain && certificate.status === 'REVOKED') {
+      status = 'INTEGRITY_WARNING';
+      warningReason = 'INTEGRITY WARNING: MongoDB status shows REVOKED, but Blockchain smart contract is still active!';
     }
   }
 
@@ -200,6 +214,8 @@ export const verifyByPdfHash = async (
       ipAddress,
       userAgent,
       responseTimeMs: Date.now() - startTime,
+      blockchainChecked: chainCheck.isRegisteredOnChain,
+      blockchainResult: chainCheck,
     });
   } catch (_e) {}
 
@@ -207,12 +223,13 @@ export const verifyByPdfHash = async (
     success: status === 'VALID' || status === 'REVOKED',
     status,
     message:
-      status === 'REVOKED'
+      status === 'INTEGRITY_WARNING'
+        ? 'INTEGRITY WARNING: Discrepancy detected between MongoDB database and Ethereum Blockchain status!'
+        : status === 'REVOKED'
         ? 'PDF matches registered record, but certificate has been REVOKED.'
-        : status === 'BLOCKCHAIN_MISMATCH'
-        ? 'Blockchain Hash Mismatch Detected!'
         : 'Authentic PDF Certificate Verified.',
     duplicateNotice: previousVerificationsCount > 0,
+    reason: warningReason,
     certificate: {
       certificateId: certificate.certificateId,
       recipientName: certificate.recipientName,
@@ -237,6 +254,9 @@ export const verifyByPdfHash = async (
       blockchainRegisteredAt: certificate.blockchainRegisteredAt
         ? certificate.blockchainRegisteredAt.toISOString()
         : null,
+      ipfsCid: certificate.ipfsCid || certificate.ipfsHash || null,
+      ipfsGatewayUrl: certificate.ipfsGatewayUrl || certificate.ipfsUrl || null,
+      storageType: certificate.storageType || (certificate.ipfsCid ? 'IPFS' : 'LOCAL'),
     },
     verifiedAt: verifiedAtStr,
   };

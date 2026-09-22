@@ -8,7 +8,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "create-admin": "ts-node src/scripts/createAdmin.ts",
+    "seed:superadmin": "ts-node src/scripts/seedSuperAdmin.ts",
+    "seed-superadmin": "ts-node src/scripts/seedSuperAdmin.ts",
+    "migrate-multitenant": "ts-node src/scripts/migrateMultiTenant.ts",
     "seed": "ts-node src/seed.ts",
+    "migrate-ipfs": "ts-node src/scripts/migrateToIpfs.ts",
     "test": "jest --detectOpenHandles"
   },
   "dependencies": {

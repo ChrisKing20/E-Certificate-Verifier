@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { handleGetDashboardStats, handleRetryBlockchainRegister } from '../controllers/adminController';
+import {
+  handleGetDashboardStats,
+  handleRetryBlockchainRegister,
+  handleMigrateIpfs,
+} from '../controllers/adminController';
 import {
   handleGetCertificates,
   handleGetCertificateById,
@@ -32,7 +36,11 @@ router.patch('/certificates/:id/blockchain', handleUpdateBlockchainMetadata);
 // POST /api/admin/certificates/:id/blockchain/register
 router.post('/certificates/:id/blockchain/register', handleRetryBlockchainRegister);
 
+// POST /api/admin/migrate-ipfs
+router.post('/migrate-ipfs', handleMigrateIpfs);
+
 // GET /api/admin/verification-logs
 router.get('/verification-logs', handleGetVerificationLogs);
 
 export default router;
+

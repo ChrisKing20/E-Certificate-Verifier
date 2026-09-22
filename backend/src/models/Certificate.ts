@@ -2,7 +2,19 @@ import { Schema, model, Document } from 'mongoose';
 
 export type CertificateStatus = 'VALID' | 'REVOKED';
 
-export type BlockchainStatus = 'NOT_REGISTERED' | 'PENDING' | 'CONFIRMED' | 'FAILED' | 'REVOKED';
+export type StorageType = 'IPFS' | 'LOCAL';
+
+export type BlockchainStatus =
+  | 'DATABASE_CREATED'
+  | 'IPFS_UPLOADED'
+  | 'BLOCKCHAIN_PENDING'
+  | 'BLOCKCHAIN_CONFIRMED'
+  | 'BLOCKCHAIN_FAILED'
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'FAILED'
+  | 'REVOKED'
+  | 'NOT_REGISTERED';
 
 export interface ICertificate extends Document {
   certificateId: string;
@@ -27,8 +39,14 @@ export interface ICertificate extends Document {
   blockchainStatus: BlockchainStatus;
   blockchainRegisteredAt?: Date | null;
   blockchainIssuer?: string | null;
+  ipfsCid?: string | null;
+  ipfsGatewayUrl?: string | null;
   ipfsHash?: string | null;
   ipfsUrl?: string | null;
+  storageType: StorageType;
+  institutionId?: Schema.Types.ObjectId | string | null;
+  issuedBy?: Schema.Types.ObjectId | string | null;
+  recipientUserId?: Schema.Types.ObjectId | string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,7 +142,18 @@ const certificateSchema = new Schema<ICertificate>(
     },
     blockchainStatus: {
       type: String,
-      enum: ['NOT_REGISTERED', 'PENDING', 'CONFIRMED', 'FAILED', 'REVOKED'],
+      enum: [
+        'DATABASE_CREATED',
+        'IPFS_UPLOADED',
+        'BLOCKCHAIN_PENDING',
+        'BLOCKCHAIN_CONFIRMED',
+        'BLOCKCHAIN_FAILED',
+        'PENDING',
+        'CONFIRMED',
+        'FAILED',
+        'REVOKED',
+        'NOT_REGISTERED',
+      ],
       default: 'NOT_REGISTERED',
     },
     blockchainRegisteredAt: {
@@ -132,6 +161,14 @@ const certificateSchema = new Schema<ICertificate>(
       default: null,
     },
     blockchainIssuer: {
+      type: String,
+      default: null,
+    },
+    ipfsCid: {
+      type: String,
+      default: null,
+    },
+    ipfsGatewayUrl: {
       type: String,
       default: null,
     },
@@ -143,6 +180,28 @@ const certificateSchema = new Schema<ICertificate>(
       type: String,
       default: null,
     },
+    storageType: {
+      type: String,
+      enum: ['IPFS', 'LOCAL'],
+      default: 'LOCAL',
+    },
+    institutionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Institution',
+      default: null,
+      index: true,
+    },
+    issuedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    recipientUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -150,5 +209,6 @@ const certificateSchema = new Schema<ICertificate>(
 );
 
 certificateSchema.index({ createdAt: -1 });
+certificateSchema.index({ recipientEmail: 1 });
 
 export const Certificate = model<ICertificate>('Certificate', certificateSchema);

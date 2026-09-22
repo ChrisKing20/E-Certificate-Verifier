@@ -1,33 +1,63 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../types';
 
-export const requireRole = (requiredRole: 'ADMIN' | 'SUPER_ADMIN') => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.admin) {
+export const requireRole = (...allowedRoles: Array<'SUPER_ADMIN' | 'ADMIN' | 'USER'>) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const authReq = req as AuthRequest;
+    const user = authReq.user || authReq.admin;
+
+    if (!user) {
       res.status(401).json({
         success: false,
-        message: 'Authentication required.',
+        message: 'Authentication required. Authorization token is missing.',
       });
       return;
     }
 
-    const { role } = req.admin;
+    const role = user.role as 'SUPER_ADMIN' | 'ADMIN' | 'USER';
 
-    // SUPER_ADMIN can access both SUPER_ADMIN and ADMIN routes
+    // SUPER_ADMIN has platform-wide access
     if (role === 'SUPER_ADMIN') {
       next();
       return;
     }
 
-    // ADMIN can access ADMIN routes, but NOT SUPER_ADMIN routes
-    if (requiredRole === 'ADMIN' && role === 'ADMIN') {
+    if (allowedRoles.includes(role)) {
       next();
       return;
     }
 
     res.status(403).json({
       success: false,
-      message: 'Forbidden. Insufficient administrative privileges.',
+      message: `Forbidden. Role '${role}' is not authorized to access this resource. Required role: ${allowedRoles.join(' or ')}.`,
     });
   };
 };
+
+export const requireInstitutionAccess = () => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const authReq = req as AuthRequest;
+    const user = authReq.user || authReq.admin;
+
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Authentication required.' });
+      return;
+    }
+
+    if (user.role === 'SUPER_ADMIN') {
+      next();
+      return;
+    }
+
+    if (user.role === 'ADMIN' && !user.institutionId) {
+      res.status(403).json({
+        success: false,
+        message: 'Forbidden. Admin account is not linked to any active institution.',
+      });
+      return;
+    }
+
+    next();
+  };
+};
+
