@@ -4,6 +4,8 @@ import {
   handleRegisterUser,
   handleLogin,
   handleGoogleAuth,
+  handleGoogleRedirect,
+  handleGoogleCallback,
   handleGetMe,
 } from '../controllers/authController';
 import { authMiddleware } from '../middleware/authMiddleware';
@@ -28,7 +30,13 @@ router.post('/register', authLimiter, handleRegisterUser);
 // POST /api/auth/login — Unified login endpoint
 router.post('/login', authLimiter, handleLogin);
 
-// POST /api/auth/google — Google OAuth verification & auth endpoint
+// GET /api/auth/google — Initiates Google OAuth redirect flow
+router.get('/google', handleGoogleRedirect);
+
+// GET /api/auth/google/callback — Google OAuth callback endpoint
+router.get('/google/callback', handleGoogleCallback);
+
+// POST /api/auth/google — Google OAuth verification & auth endpoint (ID token/Payload)
 router.post('/google', authLimiter, handleGoogleAuth);
 
 // GET /api/auth/me — Session profile information

@@ -374,7 +374,7 @@ export const AdminDashboardPage: React.FC = () => {
                           </span>
                           {cid ? (
                             <a
-                              href={cert.ipfsGatewayUrl || cert.ipfsUrl || `https://gateway.pinata.cloud/ipfs/${cid}`}
+                              href={cert.ipfsGatewayUrl && !cert.ipfsGatewayUrl.includes('gateway.pinata.cloud') ? cert.ipfsGatewayUrl : `https://ipfs.io/ipfs/${cid}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="font-mono text-[11px] text-heading hover:text-primary-teal font-semibold flex items-center gap-1 block"

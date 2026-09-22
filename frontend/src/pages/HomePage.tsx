@@ -40,10 +40,10 @@ export const HomePage: React.FC = () => {
             {/* CTAs */}
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <Link
-                to="/verify"
+                to="/login"
                 className="px-8 py-4 text-base font-extrabold text-[#0A192F] bg-[#F59E0B] hover:bg-[#D97706] rounded-2xl shadow-xl transition-all duration-200 active:scale-95 flex items-center gap-2 border border-[#F59E0B]/40"
               >
-                <ShieldCheck className="w-5 h-5 text-[#0A192F]" /> Verify Certificate
+                <Sparkles className="w-5 h-5 text-[#0A192F]" /> Student Portal
               </Link>
 
               <Link
@@ -120,70 +120,67 @@ export const HomePage: React.FC = () => {
               Verification Methods
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-display">
-              Three Ways to Verify
+              Three Security Pathways
             </h2>
             <p className="text-[#94A3B8] text-sm max-w-xl mx-auto">
-              Select any of the three secure verification pathways tailored for event credentials.
+              How our 4-layer defense system processes and validates academic certificates.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Card 1 */}
-            <div className="p-8 rounded-3xl bg-[#112240] border-2 border-[#1E293B] hover:border-[#3B82F6] shadow-sm hover:shadow-lg transition-all space-y-5 flex flex-col justify-between group">
+            <div className="p-8 rounded-3xl bg-[#112240] border-2 border-[#1E293B] shadow-sm space-y-5 flex flex-col justify-between">
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-[#1E3A8A]/30 text-[#38BDF8] w-fit group-hover:bg-[#3B82F6] group-hover:text-white transition-colors border border-[#3B82F6]/30">
+                <div className="p-4 rounded-2xl bg-[#1E3A8A]/30 text-[#38BDF8] w-fit border border-[#3B82F6]/30">
                   <FileCheck className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-extrabold text-white font-display">1. Certificate Number</h3>
+                <h3 className="text-xl font-extrabold text-white font-display">1. Certificate ID Registry</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Enter the unique alphanumeric certificate ID (e.g. <code className="text-[#F59E0B] font-mono font-bold">CERT-2027-001</code>) printed on the credential.
+                  Unique alphanumeric certificate ID (e.g. <code className="text-[#F59E0B] font-mono font-bold">ECV-2026-001</code>) matched against the issuing institution's database.
                 </p>
               </div>
-              <Link
-                to="/verify/number"
-                className="inline-flex items-center gap-2 font-extrabold text-sm text-[#38BDF8] hover:text-white"
-              >
-                Verify by Number <ArrowRight className="w-4 h-4 text-[#F59E0B]" />
-              </Link>
+              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 font-bold text-xs text-[#38BDF8]">
+                  <CheckCircle className="w-4 h-4 text-[#F59E0B]" /> Multi-Tenant Lookup
+                </span>
+              </div>
             </div>
 
             {/* Card 2 */}
-            <div className="p-8 rounded-3xl bg-[#112240] border-2 border-[#1E293B] hover:border-[#3B82F6] shadow-sm hover:shadow-lg transition-all space-y-5 flex flex-col justify-between group">
+            <div className="p-8 rounded-3xl bg-[#112240] border-2 border-[#1E293B] shadow-sm space-y-5 flex flex-col justify-between">
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-[#1E3A8A]/30 text-[#38BDF8] w-fit group-hover:bg-[#3B82F6] group-hover:text-white transition-colors border border-[#3B82F6]/30">
+                <div className="p-4 rounded-2xl bg-[#1E3A8A]/30 text-[#38BDF8] w-fit border border-[#3B82F6]/30">
                   <Upload className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-extrabold text-white font-display">2. Upload PDF</h3>
+                <h3 className="text-xl font-extrabold text-white font-display">2. SHA-256 Fingerprint</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Upload the original digital PDF document. The system identifies document fingerprints for authentication.
+                  Calculates the binary stream 256-bit SHA-256 hash of the PDF file to detect any text edits or pixel modifications.
                 </p>
               </div>
-              <Link
-                to="/verify/pdf"
-                className="inline-flex items-center gap-2 font-extrabold text-sm text-[#38BDF8] hover:text-white"
-              >
-                Upload PDF <ArrowRight className="w-4 h-4 text-[#F59E0B]" />
-              </Link>
+              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 font-bold text-xs text-[#38BDF8]">
+                  <Cpu className="w-4 h-4 text-[#F59E0B]" /> Binary Tamper Detection
+                </span>
+              </div>
             </div>
 
             {/* Card 3 */}
-            <div className="p-8 rounded-3xl bg-[#112240] border-2 border-[#1E293B] hover:border-[#3B82F6] shadow-sm hover:shadow-lg transition-all space-y-5 flex flex-col justify-between group">
+            <div className="p-8 rounded-3xl bg-[#112240] border-2 border-[#1E293B] shadow-sm space-y-5 flex flex-col justify-between">
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-[#1E3A8A]/30 text-[#38BDF8] w-fit group-hover:bg-[#3B82F6] group-hover:text-white transition-colors border border-[#3B82F6]/30">
+                <div className="p-4 rounded-2xl bg-[#1E3A8A]/30 text-[#38BDF8] w-fit border border-[#3B82F6]/30">
                   <QrCode className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-extrabold text-white font-display">3. Scan QR Code</h3>
+                <h3 className="text-xl font-extrabold text-white font-display">3. IPFS & Blockchain Proof</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Scan the embedded QR code printed on physical or digital certificates for immediate verification.
+                  Scans embedded QR code containing Pinata IPFS CID and Ethereum Sepolia smart contract proof for instant audit.
                 </p>
               </div>
-              <Link
-                to="/verify/qr"
-                className="inline-flex items-center gap-2 font-extrabold text-sm text-[#38BDF8] hover:text-white"
-              >
-                Scan QR Code <ArrowRight className="w-4 h-4 text-[#F59E0B]" />
-              </Link>
+              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 font-bold text-xs text-[#38BDF8]">
+                  <Layers className="w-4 h-4 text-[#F59E0B]" /> Ethereum & IPFS Anchored
+                </span>
+              </div>
             </div>
 
           </div>

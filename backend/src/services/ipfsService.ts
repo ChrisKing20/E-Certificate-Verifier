@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const IPFS_GATEWAY = process.env.IPFS_GATEWAY_URL || 'https://gateway.pinata.cloud/ipfs/';
+const IPFS_GATEWAY = process.env.IPFS_GATEWAY_URL || 'https://ipfs.io/ipfs/';
 const PINATA_JWT = process.env.IPFS_JWT || process.env.PINATA_JWT || '';
 const PINATA_API_KEY = process.env.PINATA_API_KEY || '';
 const PINATA_SECRET_KEY = process.env.PINATA_SECRET_API_KEY || '';
@@ -67,7 +67,7 @@ export const uploadCertificateToIPFS = async (
       if (response.ok) {
         const data = (await response.json()) as { IpfsHash: string };
         const cid = data.IpfsHash;
-        const gatewayUrl = `${IPFS_GATEWAY.replace(/\/$/, '')}/${cid}`;
+        const gatewayUrl = `https://ipfs.io/ipfs/${cid}`;
         return {
           cid,
           gatewayUrl,
@@ -83,7 +83,7 @@ export const uploadCertificateToIPFS = async (
 
   // Fallback: Generate valid deterministic IPFS CID representation
   const cid = generateFallbackCid(fileBuffer);
-  const gatewayUrl = `${IPFS_GATEWAY.replace(/\/$/, '')}/${cid}`;
+  const gatewayUrl = `https://ipfs.io/ipfs/${cid}`;
 
   return {
     cid,
@@ -93,21 +93,28 @@ export const uploadCertificateToIPFS = async (
 };
 
 /**
- * Retrieve Certificate File Buffer from IPFS Gateway
+ * Retrieve Certificate File Buffer from IPFS Gateway using multi-gateway fallback
  */
 export const getCertificateFromIPFS = async (cid: string): Promise<Buffer> => {
-  const gatewayUrl = `${IPFS_GATEWAY.replace(/\/$/, '')}/${cid}`;
+  const gateways = [
+    `https://ipfs.io/ipfs/${cid}`,
+    `https://dweb.link/ipfs/${cid}`,
+    `https://cloudflare-ipfs.com/ipfs/${cid}`,
+  ];
 
-  try {
-    const response = await fetch(gatewayUrl);
-    if (!response.ok) {
-      throw new Error(`IPFS gateway HTTP error! status: ${response.status}`);
+  for (const gatewayUrl of gateways) {
+    try {
+      const response = await fetch(gatewayUrl);
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      }
+    } catch (_err) {
+      // Continue to next gateway
     }
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (err: any) {
-    throw new Error(`Failed to retrieve certificate from IPFS gateway for CID ${cid}: ${err.message}`);
   }
+
+  throw new Error(`Failed to retrieve certificate from IPFS gateway for CID ${cid}`);
 };
 
 /**

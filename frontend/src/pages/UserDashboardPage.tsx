@@ -161,7 +161,7 @@ export const UserDashboardPage: React.FC = () => {
                       </div>
                       {cert.ipfsCid ? (
                         <a
-                          href={cert.ipfsGatewayUrl || `https://gateway.pinata.cloud/ipfs/${cert.ipfsCid}`}
+                          href={cert.ipfsGatewayUrl && !cert.ipfsGatewayUrl.includes('gateway.pinata.cloud') ? cert.ipfsGatewayUrl : `https://ipfs.io/ipfs/${cert.ipfsCid}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-cyan-400 hover:underline font-mono flex items-center truncate max-w-[200px]"

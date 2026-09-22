@@ -26,28 +26,6 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-1">
-            <Link
-              to="/"
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                isActive('/') && location.pathname === '/'
-                  ? 'bg-[#1E3A8A]/40 text-[#38BDF8] border border-[#3B82F6]/30'
-                  : 'text-[#94A3B8] hover:text-white hover:bg-[#112240]'
-              }`}
-            >
-              <Home className="w-4 h-4 text-[#F59E0B]" /> Home
-            </Link>
-
-            <Link
-              to="/verify"
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                isActive('/verify')
-                  ? 'bg-[#1E3A8A]/40 text-[#38BDF8] border border-[#3B82F6]/30'
-                  : 'text-[#94A3B8] hover:text-white hover:bg-[#112240]'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 text-[#38BDF8]" /> Verify Certificate
-            </Link>
-
             {isAuthenticated && user?.role === 'USER' && (
               <Link
                 to="/dashboard"
@@ -90,6 +68,17 @@ export const Navbar: React.FC = () => {
 
           {/* Right Action Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/"
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                isActive('/') && location.pathname === '/'
+                  ? 'bg-[#1E3A8A]/40 text-[#38BDF8] border border-[#3B82F6]/30'
+                  : 'text-[#94A3B8] hover:text-white hover:bg-[#112240] border border-transparent'
+              }`}
+            >
+              <Home className="w-4 h-4 text-[#F59E0B]" /> Home
+            </Link>
+
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#112240] border border-slate-800 text-xs font-medium text-slate-300">
@@ -107,7 +96,7 @@ export const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/login"
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-[#112240] transition-all"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#1E293B] text-xs font-bold text-white bg-[#112240] hover:bg-[#1D2D50] transition-all"
                 >
                   <User className="w-4 h-4 text-cyan-400" /> Student Login
                 </Link>
@@ -127,13 +116,6 @@ export const Navbar: React.FC = () => {
                 </Link>
               </>
             )}
-
-            <Link
-              to="/verify"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-[#0A192F] text-xs font-extrabold transition-all shadow-md active:scale-95 border border-[#F59E0B]/30"
-            >
-              Verify <ArrowRight className="w-4 h-4 text-[#0A192F]" />
-            </Link>
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -164,17 +146,6 @@ export const Navbar: React.FC = () => {
             <Home className="w-5 h-5 text-[#F59E0B]" /> Home
           </Link>
 
-          <Link
-            to="/verify"
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold ${
-              isActive('/verify')
-                ? 'bg-[#1E3A8A]/40 text-[#38BDF8]'
-                : 'text-white hover:bg-[#112240]'
-            }`}
-          >
-            <ShieldCheck className="w-5 h-5 text-[#38BDF8]" /> Verify Certificate
-          </Link>
 
           {isAuthenticated ? (
             <>

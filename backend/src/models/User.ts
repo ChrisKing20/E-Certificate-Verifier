@@ -42,7 +42,6 @@ const userSchema = new Schema<IUser>(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
     },
     role: {
       type: String,

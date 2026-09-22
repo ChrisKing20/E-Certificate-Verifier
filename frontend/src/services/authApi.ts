@@ -65,8 +65,8 @@ export const registerUserApi = async (name: string, email: string, password: str
 
 export const loginAdminApi = loginApi; // Alias for existing components
 
-export const initiateGoogleLogin = () => {
-  window.location.href = `${API_BASE_URL}/auth/google`;
+export const initiateGoogleLogin = (portal: 'USER' | 'ADMIN' = 'USER') => {
+  window.location.href = `${API_BASE_URL}/auth/google?intendedPortal=${portal}`;
 };
 
 export const getCurrentUserApi = async (): Promise<{ success: boolean; user?: AuthUser }> => {

@@ -7,8 +7,12 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  const statusCode = err.statusCode || err.status || 500;
+  let statusCode = err.statusCode || err.status || 500;
   const message = err.message || 'Internal Server Error';
+
+  if (err.name === 'MulterError' || (err.message && (err.message.includes('PDF') || err.message.includes('file type') || err.message.includes('Path traversal')))) {
+    statusCode = 400;
+  }
 
   if (statusCode >= 500) {
     console.error('❌ Server Error:', err);

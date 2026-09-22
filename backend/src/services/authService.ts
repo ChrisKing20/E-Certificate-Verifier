@@ -30,7 +30,7 @@ export const registerUser = async (data: RegisterUserDto) => {
     name: data.name.trim(),
     email: normalizedEmail,
     passwordHash,
-    googleId: data.googleId || null,
+    googleId: data.googleId || undefined,
     role: 'USER',
     emailVerified: false,
     authProvider: data.googleId ? 'GOOGLE' : 'LOCAL',

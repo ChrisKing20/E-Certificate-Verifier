@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import { initiateGoogleLogin } from '../services/authApi';
 import { Lock, Mail, Key, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AdminLoginPage: React.FC = () => {
@@ -121,9 +122,7 @@ export const AdminLoginPage: React.FC = () => {
           <div className="mt-6 border-t border-slate-800 pt-6">
             <button
               type="button"
-              onClick={() => {
-                window.location.href = 'http://localhost:5000/api/auth/google';
-              }}
+              onClick={() => initiateGoogleLogin('ADMIN')}
               className="w-full flex items-center justify-center px-4 py-3 border border-slate-700 rounded-xl shadow-sm bg-[#0A192F] text-sm font-medium text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">

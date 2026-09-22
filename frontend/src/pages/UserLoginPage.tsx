@@ -132,7 +132,7 @@ export const UserLoginPage: React.FC = () => {
             <div className="mt-6">
               <button
                 type="button"
-                onClick={initiateGoogleLogin}
+                onClick={() => initiateGoogleLogin('USER')}
                 className="w-full flex items-center justify-center px-4 py-3 border border-slate-700 rounded-xl shadow-sm bg-[#0A192F] text-sm font-medium text-slate-200 hover:bg-slate-800/80 hover:border-slate-600 focus:outline-none transition-all cursor-pointer"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">

@@ -63,7 +63,7 @@ export const registerInstitution = async (data: RegisterInstitutionDto) => {
     name: data.adminName.trim(),
     email: adminEmailNormalized,
     passwordHash,
-    googleId: data.googleId || null,
+    googleId: data.googleId || undefined,
     role: 'ADMIN',
     institutionId: institution._id,
     authProvider: data.googleId ? 'GOOGLE' : 'LOCAL',
