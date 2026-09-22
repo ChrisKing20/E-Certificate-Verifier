@@ -211,7 +211,7 @@ Frontend runs at `http://localhost:5173`
 ```env
 PORT=5000
 MONGODB_URI="mongodb+srv://<username>:<password>@cluster0.xxxx.mongodb.net/ecertificate?retryWrites=true&w=majority"
-JWT_SECRET="ecert-verifier-super-secret-jwt-key-2026-phase2"
+JWT_SECRET="YOUR_JWT_SECRET_KEY"
 CORS_ORIGIN="http://localhost:5173"
 NODE_ENV="development"
 
@@ -220,7 +220,7 @@ IPFS_GATEWAY_URL="https://gateway.pinata.cloud/ipfs/"
 IPFS_JWT="YOUR_PINATA_JWT_TOKEN"
 
 # ── Blockchain Integration (Ethereum Sepolia) ──
-CONTRACT_ADDRESS="0xd58d4369c1186aB7Bc9CFf2711d57D2fB026bA94"
+CONTRACT_ADDRESS="YOUR_SEPOLIA_CONTRACT_ADDRESS"
 SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
 
 # ── Google OAuth Configuration ──
@@ -231,8 +231,8 @@ FRONTEND_URL="http://localhost:5173"
 
 # ── Super Admin Bootstrap Credentials ──
 SUPER_ADMIN_NAME="Platform Super Admin"
-SUPER_ADMIN_EMAIL="superadmin@verifier.org"
-SUPER_ADMIN_PASSWORD="SuperAdminSecret123!"
+SUPER_ADMIN_EMAIL="admin@yourdomain.org"
+SUPER_ADMIN_PASSWORD="YOUR_SECURE_SUPER_ADMIN_PASSWORD"
 ```
 
 ---
@@ -254,15 +254,18 @@ cd frontend && npm install && npm run dev
 ## ⛓️ Smart Contract & IPFS Integration
 
 - **Network**: Ethereum Sepolia Testnet (Chain ID: `11155111`)
-- **Deployed Contract Address**: [`0xd58d4369c1186aB7Bc9CFf2711d57D2fB026bA94`](https://sepolia.etherscan.io/address/0xd58d4369c1186aB7Bc9CFf2711d57D2fB026bA94#code)
-- **Source**: [`blockchain/contracts/CertificateRegistry.sol`](blockchain/contracts/CertificateRegistry.sol)
+- **Smart Contract Framework**: Solidity 0.8.20 + OpenZeppelin Contracts v5 (`Ownable`)
+- **Source File**: [`blockchain/contracts/CertificateRegistry.sol`](blockchain/contracts/CertificateRegistry.sol)
+- **Data Privacy Guarantee**: Stores strictly cryptographic metadata (`certificateId`, `bytes32` SHA-256 hash, issuer wallet, timestamps, revocation status). No personal details or PDF files are stored on-chain.
 
-| Function | Type | Description |
-| :--- | :--- | :--- |
-| `registerCertificate(certificateId, certificateHash)` | Write | Anchor SHA-256 certificate hash (as `bytes32`) on-chain |
-| `verifyCertificate(certificateId, certificateHash)` | Read | Verify validity & hash matching status on-chain |
-| `revokeCertificate(certificateId, reason)` | Write | Revoke a certificate record on-chain with official reason |
-| `isCertificateRegistered(certificateId)` | Read | Check if a certificate ID is registered on-chain |
+| Function | Type | Modifier | Description |
+| :--- | :--- | :--- | :--- |
+| `registerCertificate(certificateId, certificateHash)` | Write | `onlyOwner` | Anchor SHA-256 certificate hash (as `bytes32`) on-chain |
+| `verifyCertificate(certificateId, certificateHash)` | Read | `view` | Verify certificate hash match & revocation status on-chain |
+| `revokeCertificate(certificateId, reason)` | Write | `onlyOwner` | Revoke a certificate record on-chain with official reason |
+| `isCertificateRegistered(certificateId)` | Read | `view` | Check if a certificate ID is registered on-chain |
+| `getCertificate(certificateId)` | Read | `view` | Retrieve on-chain details (issuer, timestamp, hash, revocation) |
+| `getCertificateCount()` | Read | `view` | Get total number of certificates registered on-chain |
 
 ---
 
