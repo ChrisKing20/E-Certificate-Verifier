@@ -17,8 +17,8 @@ A multi-layered defense platform combining institutional multi-tenant database i
 - [Getting Started](#-getting-started)
 - [Smart Contract & IPFS Integration](#-smart-contract--ipfs-integration)
 - [API Reference](#-api-reference)
+- [Phase 6 Testing, Performance & Security Documentation](#-phase-6-testing-performance--security-documentation)
 - [Project Structure](#-project-structure)
-- [Phase 6 Testing & Security](#-phase-6-testing-performance--security-documentation)
 - [Contributors](#-contributors)
 - [References](#-references)
 - [License](#-license)
@@ -55,7 +55,6 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
 ---
 
 ## 🏗️ Architecture
-
 
 ```
                                   +-------------------+
@@ -95,7 +94,7 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
    On-Chain  | Metadata                 | Certificate                     | PDF |
              v                          v                                 v     |
 +------------+------------+  +----------+----------+        +-------------+-----+----+
-| Ethereum Sepolia        |  | MongoDB Atlas Cloud     |        | IPFS Gateway / Pinata    |
+| Ethereum Sepolia Network|  | MongoDB Atlas Cloud     |        | IPFS Gateway / Pinata    |
 | CertRegistry.sol        |  | Multi-Tenant Users,     |        | Immutable Certificate    |
 | On-Chain Verification   |  | Certificates & Logs     |        | CID PDF Storage          |
 +------------+------------+  +----------+----------+        +--------------------------+
@@ -106,6 +105,7 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
       +------+--------------------------+------+
       |      Certificate Verified / Invalid    |
       +----------------------------------------+
+```
 
 ---
 
@@ -333,6 +333,36 @@ cd frontend && npm install && npm run dev
 
 ---
 
+## 🧪 Phase 6 Testing, Performance & Security Documentation
+
+All Phase 6 research deliverables, performance benchmarks, and security reports are stored in the [`docs/`](docs/) directory:
+
+- 📊 [`docs/experiment-results.csv`](docs/experiment-results.csv) — Empirical dataset measuring SHA-256 hashing speed, MongoDB query latency, and IPFS lookup overhead across file sizes (100KB to 10MB).
+- 🧪 [`docs/testing-report.md`](docs/testing-report.md) — Comprehensive end-to-end test suite summary (100% pass rate across 89 test cases).
+- ⚡ [`docs/performance-report.md`](docs/performance-report.md) — Hashing latency, verification response times, and database query scalability analysis.
+- 🛡️ [`docs/security-report.md`](docs/security-report.md) — Threat model, PDF magic-byte validation (`%PDF-`), filename sanitization, and secret protection policies.
+- 🔬 [`docs/research-methodology.md`](docs/research-methodology.md) — Research answers (RQ1–RQ7) on cryptographic hash integrity and multi-tenant performance.
+- 🏢 [`docs/multi-tenant-testing.md`](docs/multi-tenant-testing.md) — Institutional data boundary isolation test cases and cross-tenant attack prevention.
+- 🔐 [`docs/authentication-testing.md`](docs/authentication-testing.md) — Role-based access control matrix and Google OAuth security policies.
+
+### Running Automated Test Suites
+
+```bash
+# Run Hardhat Smart Contract Tests
+cd blockchain
+npx hardhat test
+
+# Run Backend Jest API & Integration Test Suite
+cd backend
+npm test
+
+# Run Empirical Performance Benchmark Script
+cd backend
+npx ts-node src/scripts/runPerformanceBenchmarks.ts
+```
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -384,36 +414,6 @@ E-Cert-Verifier/
 
 ---
 
-## 🧪 Phase 6 Testing, Performance & Security Documentation
-
-All Phase 6 research deliverables, performance benchmarks, and security reports are stored in the [`docs/`](docs/) directory:
-
-- 📊 [`docs/experiment-results.csv`](docs/experiment-results.csv) — Empirical dataset measuring SHA-256 hashing speed, MongoDB query latency, and IPFS lookup overhead across file sizes (100KB to 10MB).
-- 🧪 [`docs/testing-report.md`](docs/testing-report.md) — Comprehensive end-to-end test suite summary (100% pass rate across 89 test cases).
-- ⚡ [`docs/performance-report.md`](docs/performance-report.md) — Hashing latency, verification response times, and database query scalability analysis.
-- 🛡️ [`docs/security-report.md`](docs/security-report.md) — Threat model, PDF magic-byte validation (`%PDF-`), filename sanitization, and secret protection policies.
-- 🔬 [`docs/research-methodology.md`](docs/research-methodology.md) — Research answers (RQ1–RQ7) on cryptographic hash integrity and multi-tenant performance.
-- 🏢 [`docs/multi-tenant-testing.md`](docs/multi-tenant-testing.md) — Institutional data boundary isolation test cases and cross-tenant attack prevention.
-- 🔐 [`docs/authentication-testing.md`](docs/authentication-testing.md) — Role-based access control matrix and Google OAuth security policies.
-
-### Running Automated Test Suites
-
-```bash
-# Run Hardhat Smart Contract Tests
-cd blockchain
-npx hardhat test
-
-# Run Backend Jest API & Integration Test Suite
-cd backend
-npm test
-
-# Run Empirical Performance Benchmark Script
-cd backend
-npx ts-node src/scripts/runPerformanceBenchmarks.ts
-```
-
----
-
 ## 📚 References
 
 Literature survey entries used to motivate E-Cert-Verifier design decisions:
@@ -432,6 +432,7 @@ Literature survey entries used to motivate E-Cert-Verifier design decisions:
 ## 📄 License
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
 ---
 
 Built with 😈 using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.
