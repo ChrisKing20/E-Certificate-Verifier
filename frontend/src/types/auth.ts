@@ -12,6 +12,17 @@ export interface Institution {
   logo?: string;
   description?: string;
   status: InstitutionStatus;
+  adminName?: string;
+  adminEmail?: string;
+  proposedAdminName?: string;
+  proposedAdminEmail?: string;
+  proposedAdminStatus?: string;
+  proposedAdminCreatedAt?: string;
+  rejectionReason?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
   createdAt?: string;
 }
 

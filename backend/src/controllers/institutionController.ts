@@ -62,6 +62,25 @@ export const handleGetInstitutions = async (req: Request, res: Response, next: N
 
     res.status(200).json({
       success: true,
+      data: institutions,
+      institutions,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleGetPendingInstitutions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { search } = req.query;
+    const institutions = await getInstitutions({
+      status: 'PENDING',
+      search: search as string,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: institutions,
       institutions,
     });
   } catch (error) {
@@ -72,7 +91,10 @@ export const handleGetInstitutions = async (req: Request, res: Response, next: N
 export const handleApproveInstitution = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const institution = await approveInstitution(id);
+    const authReq = req as any;
+    const superAdminUserId = authReq.user?.id || authReq.admin?.id || authReq.user?.userId;
+
+    const institution = await approveInstitution(id, superAdminUserId);
 
     res.status(200).json({
       success: true,
@@ -87,11 +109,16 @@ export const handleApproveInstitution = async (req: Request, res: Response, next
 export const handleRejectInstitution = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const institution = await rejectInstitution(id);
+    const { reason, rejectionReason } = req.body || {};
+    const finalReason = reason || rejectionReason;
+    const authReq = req as any;
+    const superAdminUserId = authReq.user?.id || authReq.admin?.id || authReq.user?.userId;
+
+    const institution = await rejectInstitution(id, superAdminUserId, finalReason);
 
     res.status(200).json({
       success: true,
-      message: 'Institution request rejected.',
+      message: 'Institution request rejected successfully.',
       institution,
     });
   } catch (error) {

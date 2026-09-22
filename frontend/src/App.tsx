@@ -53,14 +53,26 @@ export const App: React.FC = () => {
               }
             />
 
-            {/* Protected Super Admin Dashboard */}
+            {/* Protected Super Admin Dashboard & Pending Requests */}
             <Route
-              path="/superadmin/dashboard"
+              path="/super-admin/dashboard"
               element={
                 <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
                   <SuperAdminDashboardPage />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/super-admin/institutions/pending"
+              element={
+                <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                  <SuperAdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin/dashboard"
+              element={<Navigate to="/super-admin/dashboard" replace />}
             />
 
             {/* Public Admin Login Route */}

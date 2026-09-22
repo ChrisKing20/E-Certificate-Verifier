@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   handleRegisterInstitution,
   handleGetInstitutions,
+  handleGetPendingInstitutions,
   handleApproveInstitution,
   handleRejectInstitution,
   handleSuspendInstitution,
@@ -21,13 +22,19 @@ router.use(requireRole('SUPER_ADMIN'));
 // GET /api/institutions — List all institutions
 router.get('/', handleGetInstitutions);
 
-// PATCH /api/institutions/:id/approve — Approve institution onboarding
+// GET /api/institutions/pending — List only pending institution onboarding requests
+router.get('/pending', handleGetPendingInstitutions);
+
+// APPROVE: Support both POST and PATCH /api/institutions/:id/approve
+router.post('/:id/approve', handleApproveInstitution);
 router.patch('/:id/approve', handleApproveInstitution);
 
-// PATCH /api/institutions/:id/reject — Reject institution onboarding
+// REJECT: Support both POST and PATCH /api/institutions/:id/reject
+router.post('/:id/reject', handleRejectInstitution);
 router.patch('/:id/reject', handleRejectInstitution);
 
-// PATCH /api/institutions/:id/suspend — Suspend institution
+// SUSPEND: Support both POST and PATCH /api/institutions/:id/suspend
+router.post('/:id/suspend', handleSuspendInstitution);
 router.patch('/:id/suspend', handleSuspendInstitution);
 
 export default router;

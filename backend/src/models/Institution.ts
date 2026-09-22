@@ -12,6 +12,11 @@ export interface IInstitution extends Document {
   description?: string | null;
   status: InstitutionStatus;
   createdBy?: Types.ObjectId | string | null;
+  approvedBy?: Types.ObjectId | string | null;
+  approvedAt?: Date | null;
+  rejectedBy?: Types.ObjectId | string | null;
+  rejectedAt?: Date | null;
+  rejectionReason?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +69,28 @@ const institutionSchema = new Schema<IInstitution>(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      default: null,
+    },
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    rejectedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectionReason: {
+      type: String,
       default: null,
     },
   },

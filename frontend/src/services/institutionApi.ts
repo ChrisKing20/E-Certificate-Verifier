@@ -19,6 +19,10 @@ export const getInstitutionsApi = async (status?: string): Promise<InstitutionLi
   return await apiFetch<InstitutionListResponse>(`/institutions${query}`);
 };
 
+export const getPendingInstitutionsApi = async (): Promise<InstitutionListResponse> => {
+  return await apiFetch<InstitutionListResponse>('/institutions/pending');
+};
+
 export const approveInstitutionApi = async (id: string) => {
   return await apiFetch<{ success: boolean; message: string; data: Institution }>(`/institutions/${id}/approve`, {
     method: 'PATCH',

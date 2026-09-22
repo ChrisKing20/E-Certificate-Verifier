@@ -2,7 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER';
 export type AuthProviderType = 'LOCAL' | 'GOOGLE' | 'LOCAL_AND_GOOGLE';
-export type UserAccountStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED';
+export type UserAccountStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED';
 
 export interface IUser extends Document {
   name: string;
@@ -66,7 +66,7 @@ const userSchema = new Schema<IUser>(
     },
     status: {
       type: String,
-      enum: ['PENDING', 'ACTIVE', 'SUSPENDED'],
+      enum: ['PENDING', 'ACTIVE', 'SUSPENDED', 'REJECTED'],
       default: 'ACTIVE',
       index: true,
     },

@@ -95,40 +95,67 @@ export const getInstitutions = async (query: { status?: string; search?: string 
     filter.$or = [{ name: searchRegex }, { institutionCode: searchRegex }, { officialEmail: searchRegex }];
   }
 
-  const institutions = await Institution.find(filter).sort({ createdAt: -1 });
+  const rawInstitutions = await Institution.find(filter).sort({ createdAt: -1 }).lean();
+
+  const institutions = await Promise.all(
+    rawInstitutions.map(async (inst) => {
+      const admin = await User.findOne({ institutionId: inst._id, role: 'ADMIN' })
+        .select('name email status createdAt')
+        .lean();
+
+      return {
+        ...inst,
+        proposedAdminName: admin ? admin.name : 'N/A',
+        proposedAdminEmail: admin ? admin.email : 'N/A',
+        proposedAdminStatus: admin ? admin.status : 'N/A',
+        proposedAdminCreatedAt: admin ? admin.createdAt : inst.createdAt,
+      };
+    })
+  );
+
   return institutions;
 };
 
-export const approveInstitution = async (id: string) => {
+export const approveInstitution = async (id: string, superAdminUserId?: string) => {
   const inst = await Institution.findById(id);
   if (!inst) {
     throw { statusCode: 404, message: 'Institution record not found.' };
   }
 
   inst.status = 'ACTIVE';
+  if (superAdminUserId) {
+    inst.approvedBy = superAdminUserId as any;
+  }
+  inst.approvedAt = new Date();
   await inst.save();
 
-  // Update associated ADMIN users to ACTIVE status
+  // Change associated proposed admin status = ACTIVE, role = ADMIN
   await User.updateMany(
-    { institutionId: inst._id, role: 'ADMIN' },
-    { $set: { status: 'ACTIVE' } }
+    { institutionId: inst._id },
+    { $set: { status: 'ACTIVE', role: 'ADMIN' } }
   );
 
   return inst;
 };
 
-export const rejectInstitution = async (id: string) => {
+export const rejectInstitution = async (id: string, superAdminUserId?: string, reason?: string) => {
   const inst = await Institution.findById(id);
   if (!inst) {
     throw { statusCode: 404, message: 'Institution record not found.' };
   }
 
   inst.status = 'REJECTED';
+  inst.rejectionReason = reason || 'Registration request rejected by platform administrator.';
+  if (superAdminUserId) {
+    inst.rejectedBy = superAdminUserId as any;
+  }
+  inst.rejectedAt = new Date();
   await inst.save();
 
+  // Change proposed admin status = REJECTED
   await User.updateMany(
-    { institutionId: inst._id, role: 'ADMIN' },
-    { $set: { status: 'SUSPENDED' } }
+    { institutionId: inst._id },
+    { $set: { status: 'REJECTED' } }
   );
 
   return inst;

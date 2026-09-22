@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { initiateGoogleLogin } from '../services/authApi';
 import { Lock, Mail, AlertCircle, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
@@ -34,10 +36,13 @@ export const UserLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A192F] text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Dynamic Background Effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#0A192F] text-slate-100 flex flex-col">
+      <Navbar />
+
+      <main className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Dynamic Background Effects */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center mb-3">
@@ -180,6 +185,8 @@ export const UserLoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+      </main>
+      <Footer />
     </div>
   );
 };

@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Logo } from './Logo';
 import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, Lock, Home, Menu, X, ArrowRight, User, LogOut, Building2, LayoutDashboard } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -54,9 +60,9 @@ export const Navbar: React.FC = () => {
 
             {isAuthenticated && user?.role === 'SUPER_ADMIN' && (
               <Link
-                to="/superadmin/dashboard"
+                to="/super-admin/dashboard"
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  isActive('/superadmin/dashboard')
+                  isActive('/super-admin')
                     ? 'bg-[#1E3A8A]/40 text-[#38BDF8] border border-[#3B82F6]/30'
                     : 'text-[#94A3B8] hover:text-white hover:bg-[#112240]'
                 }`}
@@ -86,7 +92,7 @@ export const Navbar: React.FC = () => {
                   <span className="max-w-[120px] truncate">{user?.name}</span>
                 </div>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-all border border-slate-700 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5 text-red-400" /> Logout
@@ -178,7 +184,7 @@ export const Navbar: React.FC = () => {
               )}
               <button
                 onClick={() => {
-                  logout();
+                  handleLogout();
                   setMobileOpen(false);
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-bold"
