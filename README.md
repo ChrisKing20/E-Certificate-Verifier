@@ -1,10 +1,10 @@
-# 🛡️ CertVerify
+# 📜 E-Cert-Verifier
 
-**Tamper-Proof Academic Credential & Multi-Institution Verification System**
+**Tamper-Proof Academic & Multi-Institution Credential Verification Platform**
 
 ---
 
-A multi-layered defense system combining database isolation, SHA-256 cryptographic PDF hashing, IPFS decentralized file storage, scannable QR code verification, and smart contract anchoring on Ethereum Sepolia — built for universities, academic institutions, and digital credential issuers.
+A multi-layered defense platform combining institutional multi-tenant database isolation, SHA-256 cryptographic PDF stream hashing, IPFS decentralized file storage via Pinata, scannable dynamic QR code payload verification, and smart contract anchoring on Ethereum Sepolia — built for universities, colleges, and digital event credential issuers.
 
 ---
 
@@ -26,12 +26,12 @@ A multi-layered defense system combining database isolation, SHA-256 cryptograph
 
 ## 🔍 Overview
 
-Academic and event credential fraud is a growing problem. Traditional single-tenant verification systems rely on basic database queries or visual elements, leaving critical vulnerabilities. **CertVerify** introduces a defense-in-depth strategy with four sequential verification layers:
+Academic and digital credential fraud is a critical global challenge. Traditional single-tenant verification systems rely on basic database lookups or visual design checks, leaving severe vulnerabilities against document alteration or database tampering. **E-Cert-Verifier** introduces a defense-in-depth strategy with four sequential verification layers:
 
 | Layer | Technology | What It Catches |
 | :--- | :--- | :--- |
-| 🔍 **Layer 1** | **Unique Certificate ID & Institution Registry** | Non-existent, fabricated, or unapproved institutional certificate IDs |
-| 🔐 **Layer 2** | **SHA-256 Cryptographic Hash** | Post-issuance PDF document tampering, text edits, or pixel alterations |
+| 🔍 **Layer 1** | **Unique Certificate ID & Institutional Registry** | Non-existent, fabricated, or unapproved institutional certificate IDs |
+| 🔐 **Layer 2** | **SHA-256 Cryptographic Stream Hash** | Post-issuance PDF document tampering, text edits, or pixel alterations |
 | 📱 **Layer 3** | **Dynamic QR Code & IPFS Payload** | Fake certificate URLs, forged physical prints, or unverified scan codes |
 | ⛓️ **Layer 4** | **Ethereum Sepolia Blockchain Anchor** | Centralized database tampering, backdated entries, & unauthorized record deletions |
 
@@ -47,7 +47,7 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
 - 🔒 **Cryptographic Integrity & SHA-256** — Real-time SHA-256 binary hash generation & instant signature matching for uploaded PDF certificates.
 - 📦 **IPFS Decentralized Storage** — Automatic PDF file pinning to IPFS via Pinata with fallback local storage and CID immutability.
 - ⛓️ **Ethereum Sepolia Blockchain Anchor** — On-chain certificate hash registration via Solidity `CertificateRegistry.sol` contract formatted as `bytes32`.
-- 📱 **QR Code Verification** — Instant public verification via Unique ID lookup, file upload, or live camera QR scanning.
+- 📱 **QR Code Verification** — Instant public verification via Unique ID lookup (`ECV-2026-XXXXXX`), file upload, or live camera QR scanning.
 - 📊 **Student & Admin Portals** — Dedicated Student Dashboard (`/dashboard`), Institution Admin Console (`/admin/dashboard`), and Platform Super Admin Console (`/superadmin/dashboard`).
 
 ---
@@ -65,12 +65,12 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
                      |                          |                          |
                      v                          v                          v
          +-----------------------------------------------------------------------+
-         |                      Frontend (React 18 + Vite + TS)                  |
+         |                 E-Cert-Verifier Frontend (React 18 + Vite + TS)       |
          +-----------------------------------+-----------------------------------+
                                              | HTTP / REST
                                              v
          +-----------------------------------------------------------------------+
-         |                    Backend Server (Node.js + Express + TS)            |
+         |                 E-Cert-Verifier Backend (Node.js + Express + TS)       |
          |                                                                       |
          |  +------------------+  +--------------------+  +--------------------+  |
          |  |  SHA-256 Crypto  |  |   IPFS Pinata SDK  |  |   QR Code Engine   |  |
@@ -110,7 +110,7 @@ The verification pipeline fails fast — if Layer 1 or Layer 2 detects a non-reg
 | **Vite 5** | Lightning-fast build tool & dev server |
 | **Tailwind CSS v4** | Modern utility-first CSS framework |
 | **React Router DOM v7** | Client-side routing and page navigation |
-| **Lucide React** | Icon system |
+| **Lucide React** | Crisp icon system |
 | **Canvas Confetti** | Verification success animation |
 
 ### Smart Contract & Blockchain
@@ -220,8 +220,8 @@ IPFS_GATEWAY_URL="https://gateway.pinata.cloud/ipfs/"
 IPFS_JWT="YOUR_PINATA_JWT_TOKEN"
 
 # ── Blockchain Integration (Ethereum Sepolia) ──
-CONTRACT_ADDRESS="0xcd70a18caa8b0cc879680e5f8B078577D64ce9de"
-SEPOLIA_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+CONTRACT_ADDRESS="0xd58d4369c1186aB7Bc9CFf2711d57D2fB026bA94"
+SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
 
 # ── Google OAuth Configuration ──
 GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
@@ -254,7 +254,7 @@ cd frontend && npm install && npm run dev
 ## ⛓️ Smart Contract & IPFS Integration
 
 - **Network**: Ethereum Sepolia Testnet (Chain ID: `11155111`)
-- **Deployed Contract Address**: [`0xcd70a18caa8b0cc879680e5f8B078577D64ce9de`](https://sepolia.etherscan.io/address/0xcd70a18caa8b0cc879680e5f8B078577D64ce9de#code)
+- **Deployed Contract Address**: [`0xd58d4369c1186aB7Bc9CFf2711d57D2fB026bA94`](https://sepolia.etherscan.io/address/0xd58d4369c1186aB7Bc9CFf2711d57D2fB026bA94#code)
 - **Source**: [`blockchain/contracts/CertificateRegistry.sol`](blockchain/contracts/CertificateRegistry.sol)
 
 | Function | Type | Description |
@@ -305,7 +305,7 @@ cd frontend && npm install && npm run dev
 ## 📁 Project Structure
 
 ```
-E-Certificate-Verifier/
+E-Cert-Verifier/
 ├── 🔧 backend/
 │   ├── src/
 │   │   ├── config/             # DB & Env configuration
@@ -346,7 +346,7 @@ E-Certificate-Verifier/
 
 ## 📚 References
 
-Literature survey entries used to motivate CertVerify design decisions:
+Literature survey entries used to motivate E-Cert-Verifier design decisions:
 1. S. R. Babu et al., "Blockchain and hash-based certificate verification framework," Proc. ICSCSE, 2022.
 2. J. Vidal et al., "Blockchain-based academic certificate management: integrity and revocation challenges," Proc. IEEE EDUCON, 2020.
 3. H. Farid, "Image forgery detection: A survey," IEEE Signal Processing Magazine, 2009.
@@ -363,5 +363,4 @@ Literature survey entries used to motivate CertVerify design decisions:
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
-Built with ❤️ using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.#   E - C e r t i f i c a t e - V e r i f i e r  
- 
+Built with ❤️ using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.
