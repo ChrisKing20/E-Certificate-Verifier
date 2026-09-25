@@ -418,16 +418,13 @@ E-Cert-Verifier/
 
 Comprehensive academic literature survey and theoretical foundation used for the E-Cert-Verifier system architecture:
 
-1. **G. Zyskind, O. Nathan, and A. S. Pentland**, "Decentralizing privacy: Using blockchain to protect personal data," in *IEEE Security and Privacy Workshops (SPW)*, San Jose, CA, USA, 2015, pp. 180-184.
-2. **A. A. S. Al-Rimy, M. A. A. Hassan, and M. A. Ismail**, "Secure verification of academic credentials using smart contracts and IPFS," *IEEE Access*, vol. 9, pp. 124500-124512, 2021.
-3. **K. R. N. Swamy and B. V. A. Rao**, "Detection of digital document alteration via SHA-256 binary stream hashing," *Journal of Information Security and Applications*, vol. 58, p. 102789, 2021.
-4. **M. Crosby, P. Pattanayak, S. Verma, and V. Kalyanaraman**, "Blockchain technology: Beyond bitcoin," *Applied Innovation*, vol. 2, no. 6-10, pp. 71-81, 2016.
-5. **J. Benet**, "IPFS - Content Addressed, Versioned, P2P File System," *arXiv preprint arXiv:1407.3561*, 2014.
-6. **S. Nakamoto**, "Bitcoin: A Peer-to-Peer Electronic Cash System," *Decentralized Business Review*, 2008.
-7. **V. Buterin**, "A Next-Generation Smart Contract and Decentralized Application Platform," *Ethereum White Paper*, 2014.
-8. **S. R. Babu et al.**, "Blockchain and hash-based certificate verification framework," in *Proc. ICSCSE*, pp. 45-52, 2022.
-9. **J. Vidal et al.**, "Blockchain-based academic certificate management: integrity and revocation challenges," in *Proc. IEEE EDUCON*, pp. 112-119, 2020.
-10. **H. Farid**, "Image and Document Forgery Detection: A Comprehensive Survey," *IEEE Signal Processing Magazine*, vol. 26, no. 2, pp. 16-25, 2009.
+1. **Vipul Badhe, Pooja Nhavale, Sonal Todkar, Prajakta Shinde, and Kiran Kolhar**, "Digital Certificate System for Verification of Educational Certificates using Blockchain," *International Journal of Scientific Research in Science and Technology (IJSRST)*, Volume 7, Issue 5, pp. 45-50, September-October 2020. ISSN: 2395-602X. DOI: 10.32628/IJSRST20758.
+2. **Nupur Vikhankar, Ankita Andhare, Ishwari Barne, Anand Dhawale, and Sadaf Kauchali**, "E-Certificate Verification Using Blockchain," *International Journal of Engineering Research & Technology (IJERT)*, Volume 13, Issue 5, pp. 1-5, May 2024. ISSN: 2278-0181.
+3. **Aastha Chowdhary, Shubham Agrawal, and Bhawana Rudra**, "Blockchain based Framework for Student Identity and Educational Certificate Verification," in *Proceedings of the 2nd International Conference on Electronics and Sustainable Communication Systems (ICESC 2021)*, Surathkal, India, pp. 916-921, August 2021. ISBN: 978-1-6654-2867-5. DOI: 10.1109/ICESC51422.2021.9532968.
+4. **Avni Rustemi, Fisnik Dalipi, Vladimir Atanasovski, and Aleksandar Risteski**, "A Systematic Literature Review on Blockchain-Based Systems for Academic Certificate Verification," *IEEE Access*, Volume 11, pp. 64679-64696, June 2023. DOI: 10.1109/ACCESS.2023.3289598.
+5. **S. R. Babu et al.**, "Blockchain and hash-based certificate verification framework," in *Proceedings of International Conference on Smart Computing and Software Engineering (ICSCSE)*, 2022.
+6. **J. Vidal et al.**, "Blockchain-based academic certificate management: integrity and revocation challenges," in *Proceedings of IEEE Global Engineering Education Conference (EDUCON)*, pp. 1120-1127, 2020.
+7. **H. Farid**, "Image forgery detection: A survey," *IEEE Signal Processing Magazine*, Volume 26, Issue 2, pp. 16-25, 2009.
 
 ---
 
