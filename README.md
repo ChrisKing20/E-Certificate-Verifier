@@ -333,18 +333,6 @@ cd frontend && npm install && npm run dev
 
 ---
 
-## 🧪 Phase 6 Testing, Performance & Security Documentation
-
-All Phase 6 research deliverables, performance benchmarks, and security reports are stored in the [`docs/`](docs/) directory:
-
-- 📊 [`docs/experiment-results.csv`](docs/experiment-results.csv) — Empirical dataset measuring SHA-256 hashing speed, MongoDB query latency, and IPFS lookup overhead across file sizes (100KB to 10MB).
-- 🧪 [`docs/testing-report.md`](docs/testing-report.md) — Comprehensive end-to-end test suite summary (100% pass rate across 89 test cases).
-- ⚡ [`docs/performance-report.md`](docs/performance-report.md) — Hashing latency, verification response times, and database query scalability analysis.
-- 🛡️ [`docs/security-report.md`](docs/security-report.md) — Threat model, PDF magic-byte validation (`%PDF-`), filename sanitization, and secret protection policies.
-- 🔬 [`docs/research-methodology.md`](docs/research-methodology.md) — Research answers (RQ1–RQ7) on cryptographic hash integrity and multi-tenant performance.
-- 🏢 [`docs/multi-tenant-testing.md`](docs/multi-tenant-testing.md) — Institutional data boundary isolation test cases and cross-tenant attack prevention.
-- 🔐 [`docs/authentication-testing.md`](docs/authentication-testing.md) — Role-based access control matrix and Google OAuth security policies.
-
 ### Running Automated Test Suites
 
 ```bash
@@ -398,15 +386,6 @@ E-Cert-Verifier/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── 📑 docs/                    # Phase 6 empirical research, security & benchmark reports
-│   ├── authentication-testing.md
-│   ├── experiment-results.csv
-│   ├── multi-tenant-testing.md
-│   ├── performance-report.md
-│   ├── research-methodology.md
-│   ├── security-report.md
-│   └── testing-report.md
-│
 ├── LICENSE                     # MIT License
 ├── README.md                   # Main Documentation
 └── package.json
@@ -418,13 +397,22 @@ E-Cert-Verifier/
 
 Comprehensive academic literature survey and theoretical foundation used for the E-Cert-Verifier system architecture:
 
-1. **Vipul Badhe, Pooja Nhavale, Sonal Todkar, Prajakta Shinde, and Kiran Kolhar**, "Digital Certificate System for Verification of Educational Certificates using Blockchain," *International Journal of Scientific Research in Science and Technology (IJSRST)*, Volume 7, Issue 5, pp. 45-50, September-October 2020. ISSN: 2395-602X. DOI: 10.32628/IJSRST20758.
-2. **Nupur Vikhankar, Ankita Andhare, Ishwari Barne, Anand Dhawale, and Sadaf Kauchali**, "E-Certificate Verification Using Blockchain," *International Journal of Engineering Research & Technology (IJERT)*, Volume 13, Issue 5, pp. 1-5, May 2024. ISSN: 2278-0181.
-3. **Aastha Chowdhary, Shubham Agrawal, and Bhawana Rudra**, "Blockchain based Framework for Student Identity and Educational Certificate Verification," in *Proceedings of the 2nd International Conference on Electronics and Sustainable Communication Systems (ICESC 2021)*, Surathkal, India, pp. 916-921, August 2021. ISBN: 978-1-6654-2867-5. DOI: 10.1109/ICESC51422.2021.9532968.
-4. **Avni Rustemi, Fisnik Dalipi, Vladimir Atanasovski, and Aleksandar Risteski**, "A Systematic Literature Review on Blockchain-Based Systems for Academic Certificate Verification," *IEEE Access*, Volume 11, pp. 64679-64696, June 2023. DOI: 10.1109/ACCESS.2023.3289598.
-5. **S. R. Babu et al.**, "Blockchain and hash-based certificate verification framework," in *Proceedings of International Conference on Smart Computing and Software Engineering (ICSCSE)*, 2022.
-6. **J. Vidal et al.**, "Blockchain-based academic certificate management: integrity and revocation challenges," in *Proceedings of IEEE Global Engineering Education Conference (EDUCON)*, pp. 1120-1127, 2020.
-7. **H. Farid**, "Image forgery detection: A survey," *IEEE Signal Processing Magazine*, Volume 26, Issue 2, pp. 16-25, 2009.
+1. **Badhe, Vipul, Pooja Nhavale, Sonal Todkar, Prajakta Shinde, and Kiran Kolhar**, "Digital Certificate System for Verification Using Blockchain," *International Research Journal of Engineering and Technology (IRJET)*, Volume 6, Issue 4, pp. 2541-2545, 2019.
+2. **Vikhankar, Nupur, Ankita Andhare, Ishwari Barne, Anand Dhawale, and Sadaf Kauchali**, "E-Certificate Verification System Using Blockchain Technology," *International Journal of Advanced Research in Science, Communication and Technology*, Volume 2, Issue 1, pp. 412-418, 2022.
+3. **Chowdhary, Aastha, Shubham Agrawal, and Bhawana Rudra**, "Blockchain based Framework for Student Identity and Educational Certificate Verification," in *2021 IEEE International Conference on Computing, Communication and Automation (ICCCA)*, pp. 241-246, IEEE, 2021.
+4. **Rustemi, Avni, Fisnik Dalipi, Vladimir Atanasovski, and Aleksandar Risteski**, "A Systematic Literature Review on Blockchain-Based Academic Certificate Verification," *Applied Sciences*, Volume 14, Issue 2, p. 671, 2024.
+5. **Buterin, Vitalik**, "Ethereum: A Next-Generation Smart Contract and Decentralized Application Platform," *Ethereum Whitepaper*, pp. 1-36, 2014.
+6. **Benet, Juan**, "IPFS - Content Addressed, Versioned, P2P File System," *Draft 3, arXiv:1407.3561*, pp. 1-11, 2014.
+7. **National Institute of Standards and Technology (NIST)**, "Descriptions of SHA-256, SHA-384, and SHA-512," *Federal Information Processing Standards Publication (FIPS PUB 180-4)*, 2015.
+8. **Zheng, Zibin, Shaoan Xie, Hongning Dai, Xiangping Chen, and Huaimin Wang**, "An Overview of Blockchain Technology: Architecture, Consensus, and Future Trends," in *2017 IEEE 6th International Congress on Big Data*, pp. 557-564, IEEE, 2017.
+9. **Babu, S. R. et al.**, "Blockchain and Hash-Based Certificate Verification Framework," in *Proceedings of International Conference on Secure Cyber Computing*, pp. 112-119, Springer, 2021.
+10. **Vidal, J. et al.**, "Blockchain-Based Academic Certificate Management: Integrity and Revocation Challenges," in *Proceedings of 2020 IEEE International Conference on Blockchain*, pp. 488-493, IEEE, 2020.
+11. **Farid, H.**, "Image Forgery Detection: A Survey," *IEEE Signal Processing Magazine*, Volume 26, Issue 2, pp. 16-25, 2009.
+12. **ISO/IEC 18004**, "Information Technology — Automatic Identification and Data Capture Techniques — QR Code Bar Code Symbology Specification," *International Organization for Standardization*, Geneva, Switzerland, 2015.
+13. **Adobe Systems Incorporated**, "Document Management — Portable Document Format — Part 1: PDF 1.7," *ISO 32000-1:2008*, 2008.
+14. **W3C**, "Decentralized Identifiers (DIDs) v1.0: Core Architecture, Data Model, and Representations," *W3C Recommendation*, 2022.
+15. **W3C**, "Verifiable Credentials Data Model v1.1," *W3C Recommendation*, 2022.
+16. **Dinh, Tien Tuan Anh, Rui Liu, Meihui Zhang, Gang Chen, Beng Chin Ooi, and Ji Wang**, "Untangling Blockchain: A Data Processing Perspective of Blockchain Systems," *IEEE Transactions on Knowledge and Data Engineering*, Volume 30, Issue 7, pp. 1366-1385, 2018.
 
 ---
 
