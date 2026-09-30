@@ -41,6 +41,8 @@ export interface ICertificate extends Document {
   blockchainIssuer?: string | null;
   ipfsCid?: string | null;
   ipfsGatewayUrl?: string | null;
+  ipfsQrCid?: string | null;
+  ipfsQrGatewayUrl?: string | null;
   ipfsHash?: string | null;
   ipfsUrl?: string | null;
   storageType: StorageType;
@@ -169,6 +171,14 @@ const certificateSchema = new Schema<ICertificate>(
       default: null,
     },
     ipfsGatewayUrl: {
+      type: String,
+      default: null,
+    },
+    ipfsQrCid: {
+      type: String,
+      default: null,
+    },
+    ipfsQrGatewayUrl: {
       type: String,
       default: null,
     },

@@ -80,8 +80,8 @@ export const createCertificate = async (data: CreateCertificateDto) => {
     console.warn(`[IPFS Upload Warning]: ${err.message}. Proceeding with database creation.`);
   }
 
-  // 5. Generate QR code
-  const { qrDataUrl, qrFilePath } = await generateQRCode(certificateId);
+  // 5. Generate QR code & upload QR Image to IPFS
+  const { qrDataUrl, qrFilePath, ipfsQrCid, ipfsQrGatewayUrl } = await generateQRCode(certificateId);
 
   // 6. Save to MongoDB via Mongoose
   const certificate = await Certificate.create({
@@ -105,6 +105,8 @@ export const createCertificate = async (data: CreateCertificateDto) => {
     blockchainRegisteredAt: null,
     ipfsCid: ipfsResult.cid || null,
     ipfsGatewayUrl: ipfsResult.gatewayUrl || null,
+    ipfsQrCid: ipfsQrCid || null,
+    ipfsQrGatewayUrl: ipfsQrGatewayUrl || null,
     ipfsHash: ipfsResult.cid || null,
     ipfsUrl: ipfsResult.gatewayUrl || null,
     storageType: ipfsResult.cid ? 'IPFS' : 'LOCAL',
@@ -399,7 +401,7 @@ export const migrateLocalCertificatesToIPFS = async (forceAll: boolean = true) =
 
   let migratedCount = 0;
   let failedCount = 0;
-  const details: Array<{ certificateId: string; status: string; cid?: string; error?: string }> = [];
+  const details: Array<{ certificateId: string; status: string; cid?: string; qrCid?: string; error?: string }> = [];
 
   for (const cert of legacyCertificates) {
     try {
@@ -450,10 +452,16 @@ export const migrateLocalCertificatesToIPFS = async (forceAll: boolean = true) =
 
       const ipfsResult = await uploadCertificateToIPFS(buffer, `${cert.certificateId}.pdf`);
 
+      // Generate & Pin separate QR Code PNG Image to IPFS
+      const qrRes = await generateQRCode(cert.certificateId);
+
       cert.ipfsCid = ipfsResult.cid;
       cert.ipfsGatewayUrl = ipfsResult.gatewayUrl;
+      cert.ipfsQrCid = qrRes.ipfsQrCid || null;
+      cert.ipfsQrGatewayUrl = qrRes.ipfsQrGatewayUrl || null;
       cert.ipfsHash = ipfsResult.cid;
       cert.ipfsUrl = ipfsResult.gatewayUrl;
+      cert.qrCodePath = qrRes.qrFilePath || cert.qrCodePath;
       cert.storageType = 'IPFS';
       if (cert.blockchainStatus === 'NOT_REGISTERED' || cert.blockchainStatus === 'DATABASE_CREATED') {
         cert.blockchainStatus = 'IPFS_UPLOADED';
@@ -461,7 +469,12 @@ export const migrateLocalCertificatesToIPFS = async (forceAll: boolean = true) =
 
       await cert.save();
       migratedCount++;
-      details.push({ certificateId: cert.certificateId, status: 'SUCCESS', cid: ipfsResult.cid });
+      details.push({
+        certificateId: cert.certificateId,
+        status: 'SUCCESS',
+        cid: ipfsResult.cid,
+        qrCid: qrRes.ipfsQrCid || undefined,
+      });
     } catch (err: any) {
       failedCount++;
       details.push({ certificateId: cert.certificateId, status: 'FAILED', error: err.message });
