@@ -488,3 +488,39 @@ export const migrateLocalCertificatesToIPFS = async (forceAll: boolean = true) =
     details,
   };
 };
+
+/**
+ * Re-upload and pin a custom PDF file for any certificate to Pinata IPFS
+ */
+export const reuploadCertificatePdf = async (
+  certificateId: string,
+  fileBuffer: Buffer,
+  filePath: string
+) => {
+  const normalizedId = certificateId.trim().toUpperCase();
+  const cert = await Certificate.findOne({ certificateId: normalizedId });
+  if (!cert) {
+    throw new Error(`Certificate not found with ID ${certificateId}`);
+  }
+
+  const fileHash = calculateSHA256(fileBuffer);
+  const ipfsResult = await uploadCertificateToIPFS(fileBuffer, `${cert.certificateId}.pdf`);
+  const qrRes = await generateQRCode(cert.certificateId);
+
+  cert.filePath = filePath;
+  cert.fileHash = fileHash;
+  cert.ipfsCid = ipfsResult.cid || cert.ipfsCid;
+  cert.ipfsGatewayUrl = ipfsResult.gatewayUrl || cert.ipfsGatewayUrl;
+  cert.ipfsQrCid = qrRes.ipfsQrCid || cert.ipfsQrCid;
+  cert.ipfsQrGatewayUrl = qrRes.ipfsQrGatewayUrl || cert.ipfsQrGatewayUrl;
+  cert.ipfsHash = ipfsResult.cid || cert.ipfsHash;
+  cert.ipfsUrl = ipfsResult.gatewayUrl || cert.ipfsUrl;
+  cert.qrCodePath = qrRes.qrFilePath || cert.qrCodePath;
+  cert.storageType = 'IPFS';
+  if (cert.blockchainStatus === 'NOT_REGISTERED' || cert.blockchainStatus === 'DATABASE_CREATED') {
+    cert.blockchainStatus = 'IPFS_UPLOADED';
+  }
+
+  await cert.save();
+  return cert;
+};
