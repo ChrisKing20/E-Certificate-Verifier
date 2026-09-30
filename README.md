@@ -430,5 +430,4 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ---
 
-Built with 😈 using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.#   E - C e r t i f i c a t e - V e r i f i e r  
- 
+Built with 😈 using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.
