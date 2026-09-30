@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env*
+dist/
+build/
+*.log
+uploads/
+backend/uploads/
+docs
+scratch
