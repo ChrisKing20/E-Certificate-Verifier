@@ -430,4 +430,4 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ---
 
-Built with using ![alt text](god_of_war_kratos-1.png )Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.
+Built with 😈 using Node.js, React, TypeScript, IPFS & Ethereum Sepolia Solidity.
