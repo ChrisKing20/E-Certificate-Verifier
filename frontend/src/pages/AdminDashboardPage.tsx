@@ -373,6 +373,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
                         <th className="py-3 px-4">Certificate ID</th>
                         <th className="py-3 px-4">Student Recipient</th>
+                        <th className="py-3 px-4">Issued By</th>
                         <th className="py-3 px-4">Storage / IPFS</th>
                         <th className="py-3 px-4">Status</th>
                         <th className="py-3 px-4">Blockchain</th>
@@ -384,6 +385,7 @@ export const AdminDashboardPage: React.FC = () => {
                         const certNum = cert.certificateId || cert.certificateNumber || '';
                         const studentName = cert.recipientName || cert.studentName || '';
                         const cid = cert.ipfsCid || cert.ipfsHash || null;
+                        const issuedByName = cert.issuedBy && typeof cert.issuedBy === 'object' ? cert.issuedBy.name : null;
 
                         return (
                           <tr key={cert.id || cert._id || certNum} className="hover:bg-page-bg/50 transition-colors">
@@ -393,6 +395,13 @@ export const AdminDashboardPage: React.FC = () => {
                             <td className="py-4 px-4">
                               <span className="font-bold text-heading block">{studentName}</span>
                               <span className="text-[11px] text-secondary-text">{cert.recipientEmail}</span>
+                            </td>
+                            <td className="py-4 px-4">
+                              {issuedByName ? (
+                                <span className="font-semibold text-heading">{issuedByName}</span>
+                              ) : (
+                                <span className="text-secondary-text">—</span>
+                              )}
                             </td>
                             <td className="py-4 px-4">
                               {cid ? (
@@ -521,6 +530,7 @@ export const AdminDashboardPage: React.FC = () => {
                     <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-secondary-text">
                       <th className="py-3 px-4">Certificate ID</th>
                       <th className="py-3 px-4">Student Recipient</th>
+                      <th className="py-3 px-4">Issued By</th>
                       <th className="py-3 px-4">Storage / IPFS CID</th>
                       <th className="py-3 px-4">SHA-256 Hash</th>
                       <th className="py-3 px-4">Status</th>
@@ -535,6 +545,7 @@ export const AdminDashboardPage: React.FC = () => {
                       const cid = cert.ipfsCid || cert.ipfsHash || null;
                       const storage = cert.storageType || (cid ? 'IPFS' : 'LOCAL');
                       const fileHash = cert.fileHash || '';
+                      const issuedByName = cert.issuedBy && typeof cert.issuedBy === 'object' ? cert.issuedBy.name : null;
 
                       return (
                         <tr key={cert.id || cert._id || certNum} className="hover:bg-page-bg/50 transition-colors">
@@ -544,6 +555,13 @@ export const AdminDashboardPage: React.FC = () => {
                           <td className="py-4 px-4">
                             <span className="font-bold text-heading block">{studentName}</span>
                             <span className="text-[11px] text-secondary-text">{cert.recipientEmail}</span>
+                          </td>
+                          <td className="py-4 px-4">
+                            {issuedByName ? (
+                              <span className="font-semibold text-heading">{issuedByName}</span>
+                            ) : (
+                              <span className="text-secondary-text">—</span>
+                            )}
                           </td>
                           <td className="py-4 px-4">
                             <span className="px-2 py-0.5 rounded bg-primary-teal/10 text-primary-teal text-[10px] font-bold border border-primary-teal/30 inline-block mb-1">

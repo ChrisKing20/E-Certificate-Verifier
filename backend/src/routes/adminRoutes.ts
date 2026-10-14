@@ -12,11 +12,13 @@ import {
 } from '../controllers/certificateController';
 import { handleGetVerificationLogs } from '../controllers/verificationController';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/roleMiddleware';
 
 const router = Router();
 
-// Protected Admin Routes
+// Protected Admin Routes — require authentication AND Admin/Super Admin role
 router.use(authMiddleware);
+router.use(requireRole('ADMIN', 'SUPER_ADMIN'));
 
 // GET /api/admin/dashboard/stats
 router.get('/dashboard/stats', handleGetDashboardStats);

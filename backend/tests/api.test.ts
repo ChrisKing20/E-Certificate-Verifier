@@ -1,4 +1,4 @@
-import request from 'supertest';
+﻿import request from 'supertest';
 import app from '../src/app';
 import crypto from 'crypto';
 import { uploadCertificateToIPFS } from '../src/services/ipfsService';
@@ -165,6 +165,98 @@ describe('E-Cert-Verifier Phase 6 Comprehensive Test Suite', () => {
       const resStr = JSON.stringify(res.body);
       expect(resStr).not.toContain(process.env.PINATA_JWT || 'secret_jwt_key_never_expose');
       expect(resStr).not.toContain(process.env.JWT_SECRET || 'secret_jwt_key_never_expose');
+    });
+  });
+
+  // 7. Access-Control & Tenant Isolation
+  describe('7. Access-Control & Tenant Isolation', () => {
+    it('should return 401 when accessing admin certificate list without any token', async () => {
+      const res = await request(app).get('/api/admin/certificates');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 401 when accessing admin dashboard stats without any token', async () => {
+      const res = await request(app).get('/api/admin/dashboard/stats');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 403 when a USER-role token is used to access admin certificate list', async () => {
+      const email = `acl_user_${Date.now()}@test.edu`;
+      const regRes = await request(app)
+        .post('/api/auth/register')
+        .send({ name: 'ACL Test User', email, password: 'Password123!' });
+      expect(regRes.status).toBe(201);
+      const token = regRes.body.token;
+
+      const res = await request(app)
+        .get('/api/admin/certificates')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 403 when a USER-role token is used to access admin dashboard stats', async () => {
+      const email = `acl_user2_${Date.now()}@test.edu`;
+      const regRes = await request(app)
+        .post('/api/auth/register')
+        .send({ name: 'ACL Test User 2', email, password: 'Password123!' });
+      expect(regRes.status).toBe(201);
+      const token = regRes.body.token;
+
+      const res = await request(app)
+        .get('/api/admin/dashboard/stats')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 403 when a USER-role token is used to access admin verification logs', async () => {
+      const email = `acl_user3_${Date.now()}@test.edu`;
+      const regRes = await request(app)
+        .post('/api/auth/register')
+        .send({ name: 'ACL Test User 3', email, password: 'Password123!' });
+      expect(regRes.status).toBe(201);
+      const token = regRes.body.token;
+
+      const res = await request(app)
+        .get('/api/admin/verification-logs')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 401 when accessing user certificate list without any token', async () => {
+      const res = await request(app).get('/api/user/certificates');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should allow a USER-role token to access their own certificates endpoint', async () => {
+      const email = `acl_student_${Date.now()}@test.edu`;
+      const regRes = await request(app)
+        .post('/api/auth/register')
+        .send({ name: 'ACL Student', email, password: 'Password123!' });
+      expect(regRes.status).toBe(201);
+      const token = regRes.body.token;
+
+      const res = await request(app)
+        .get('/api/user/certificates')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it('should confirm public certificate verification works without any authentication', async () => {
+      const res = await request(app).get('/api/verify/number/ECV-PUBLIC-TEST-0000');
+      expect(res.status).toBe(200);
+      expect(['NOT_FOUND', 'VALID', 'REVOKED', 'INVALID']).toContain(res.body.status);
     });
   });
 });

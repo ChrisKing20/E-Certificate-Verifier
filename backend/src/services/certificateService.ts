@@ -240,7 +240,8 @@ export const getCertificates = async (query: {
     const certificates = await Certificate.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate('issuedBy', 'name email');
 
     return {
       certificates,
@@ -265,6 +266,9 @@ export const getCertificateById = async (id: string) => {
   if (!certificate) {
     throw { statusCode: 404, message: 'Certificate record not found.' };
   }
+
+  // Populate issuedBy with the admin's name and email
+  await certificate.populate('issuedBy', 'name email');
 
   return certificate;
 };

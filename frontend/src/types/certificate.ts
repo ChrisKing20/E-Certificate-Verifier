@@ -36,6 +36,8 @@ export interface Certificate {
   ipfsHash?: string | null;
   ipfsUrl?: string | null;
   storageType?: 'IPFS' | 'LOCAL';
+  /** Populated from the issuedBy ObjectId reference — contains the issuing admin's name and email */
+  issuedBy?: { _id?: string; name: string; email: string } | string | null;
 }
 
 export interface CertificateListResponse {
