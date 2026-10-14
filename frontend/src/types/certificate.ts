@@ -23,6 +23,9 @@ export interface Certificate {
   revokedAt?: string | null;
   revocationReason?: string | null;
   qrCodePath?: string | null;
+  /** IPFS gateway URL for the QR code PNG (preferred over local qrCodePath) */
+  ipfsQrGatewayUrl?: string | null;
+  ipfsQrCid?: string | null;
   blockchainStatus?: string;
   blockchainNetwork?: string;
   blockchainContractAddress?: string | null;

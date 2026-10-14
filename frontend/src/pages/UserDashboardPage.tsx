@@ -205,13 +205,19 @@ export const UserDashboardPage: React.FC = () => {
                     <FileText className="w-4 h-4 mr-1.5 text-cyan-400" /> View Certificate
                   </Link>
 
-                  {cert.qrCodePath && (
+                  {(cert.ipfsQrGatewayUrl || cert.qrCodePath) && (
                     <a
-                      href={cert.qrCodePath.startsWith('http') ? cert.qrCodePath : `http://localhost:5000${cert.qrCodePath}`}
+                      href={
+                        cert.ipfsQrGatewayUrl
+                          ? cert.ipfsQrGatewayUrl
+                          : cert.qrCodePath!.startsWith('http')
+                          ? cert.qrCodePath!
+                          : `http://localhost:5000/${cert.qrCodePath}`
+                      }
                       target="_blank"
                       rel="noreferrer"
                       className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700"
-                      title="View QR Code"
+                      title="View QR Code on IPFS"
                     >
                       <QrCode className="w-4 h-4 text-amber-400" />
                     </a>
