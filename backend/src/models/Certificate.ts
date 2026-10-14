@@ -49,6 +49,12 @@ export interface ICertificate extends Document {
   institutionId?: Schema.Types.ObjectId | string | null;
   issuedBy?: Schema.Types.ObjectId | string | null;
   recipientUserId?: Schema.Types.ObjectId | string | null;
+  /**
+   * When this certificate is an authorized replacement, supersededById records the
+   * _id of the original (revoked/superseded) certificate. This is optional and only
+   * set by the reissuance workflow — never by the standard issuance path.
+   */
+  supersededById?: Schema.Types.ObjectId | string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -212,6 +218,11 @@ const certificateSchema = new Schema<ICertificate>(
       default: null,
       index: true,
     },
+    supersededById: {
+      type: Schema.Types.ObjectId,
+      ref: 'Certificate',
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -220,5 +231,36 @@ const certificateSchema = new Schema<ICertificate>(
 
 certificateSchema.index({ createdAt: -1 });
 certificateSchema.index({ recipientEmail: 1 });
+
+/**
+ * Compound logical-duplicate index.
+ *
+ * Prevents a second certificate from being issued by the same institution
+ * for the exact same recipient/event/date/type/department combination.
+ *
+ * The partial filter expression restricts the index to documents where
+ * institutionId is NOT null, so institution-less (legacy/SUPER_ADMIN) records
+ * are excluded from the uniqueness constraint.
+ *
+ * If you need to drop and recreate this index after deployment run:
+ *   db.certificates.dropIndex('logical_duplicate_prevention')
+ */
+certificateSchema.index(
+  {
+    institutionId: 1,
+    recipientEmail: 1,
+    eventName: 1,
+    eventDate: 1,
+    certificateType: 1,
+    department: 1,
+  },
+  {
+    name: 'logical_duplicate_prevention',
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { institutionId: { $exists: true, $ne: null } },
+    background: true,
+  }
+);
 
 export const Certificate = model<ICertificate>('Certificate', certificateSchema);

@@ -44,7 +44,7 @@ export const createCertificate = async (data: CreateCertificateDto) => {
   // 1. Calculate SHA-256 hash from raw PDF bytes
   const fileHash = calculateSHA256(data.fileBuffer);
 
-  // Check if hash already exists in MongoDB database
+  // Check for exact byte-level duplicate (same file hash)
   let existingHash = null;
   try {
     existingHash = await Certificate.findOne({ fileHash });
@@ -53,8 +53,40 @@ export const createCertificate = async (data: CreateCertificateDto) => {
   if (existingHash) {
     throw {
       statusCode: 409,
-      message: `Duplicate Certificate PDF detected. A certificate with this exact file hash already exists (ID: ${existingHash.certificateId}).`,
+      message: `This exact certificate PDF has already been registered (Certificate ID: ${existingHash.certificateId}).`,
     };
+  }
+
+  // 2. Logical duplicate check: prevent re-issuance of the same certificate
+  //    (same institution + recipient + event + date + type + department).
+  //    This catches tampered PDFs uploaded under the same logical certificate reference.
+  //    Only applies when institutionId is set (institution-scoped issuance).
+  if (data.institutionId) {
+    const normalizedEmail = data.recipientEmail.trim().toLowerCase();
+    const normalizedEvent = data.eventName.trim();
+    const normalizedDate  = data.eventDate.trim();
+    const normalizedType  = data.certificateType ? data.certificateType.trim() : null;
+    const normalizedDept  = data.department ? data.department.trim() : null;
+
+    const logicalDuplicate = await Certificate.findOne({
+      institutionId: data.institutionId,
+      recipientEmail: normalizedEmail,
+      eventName: normalizedEvent,
+      eventDate: normalizedDate,
+      certificateType: normalizedType,
+      department: normalizedDept,
+    });
+
+    if (logicalDuplicate) {
+      throw {
+        statusCode: 409,
+        message:
+          `A certificate for this recipient, event, date, type, and department has already been issued by this institution ` +
+          `(Certificate ID: ${logicalDuplicate.certificateId}). ` +
+          `If this PDF was modified after issuance, the modified version cannot be re-registered here. ` +
+          `To replace a certificate, revoke the original first through an authorized reissuance process.`,
+      };
+    }
   }
 
   // 2. Generate unique Certificate ID
@@ -494,12 +526,18 @@ export const migrateLocalCertificatesToIPFS = async (forceAll: boolean = true) =
 };
 
 /**
- * Re-upload and pin a custom PDF file for any certificate to Pinata IPFS
+ * Re-upload and pin a custom PDF file for any certificate to Pinata IPFS.
+ *
+ * Security: The caller MUST pass the admin's institutionId so this function
+ * can enforce that only the owning institution may replace a certificate's PDF.
+ * SUPER_ADMIN may pass null/undefined to bypass the institution check.
  */
 export const reuploadCertificatePdf = async (
   certificateId: string,
   fileBuffer: Buffer,
-  filePath: string
+  filePath: string,
+  callerInstitutionId?: string | null,
+  callerRole?: string
 ) => {
   const normalizedId = certificateId.trim().toUpperCase();
   const cert = await Certificate.findOne({ certificateId: normalizedId });
@@ -507,12 +545,31 @@ export const reuploadCertificatePdf = async (
     throw new Error(`Certificate not found with ID ${certificateId}`);
   }
 
-  const fileHash = calculateSHA256(fileBuffer);
+  // Institution-scoped authorization: ADMIN may only replace their own institution's PDF.
+  if (callerRole === 'ADMIN') {
+    if (!callerInstitutionId) {
+      throw { statusCode: 403, message: 'Forbidden. Admin account is not linked to any active institution.' };
+    }
+    if (cert.institutionId && cert.institutionId.toString() !== callerInstitutionId) {
+      throw { statusCode: 403, message: 'Forbidden. You cannot replace the PDF of a certificate belonging to another institution.' };
+    }
+  }
+
+  // The new PDF must not be byte-identical to a *different* certificate's registered PDF.
+  const newHash = calculateSHA256(fileBuffer);
+  const hashConflict = await Certificate.findOne({ fileHash: newHash, certificateId: { $ne: normalizedId } });
+  if (hashConflict) {
+    throw {
+      statusCode: 409,
+      message: `The uploaded PDF is already registered as certificate ${hashConflict.certificateId}. Upload a different PDF.`,
+    };
+  }
+
   const ipfsResult = await uploadCertificateToIPFS(fileBuffer, `${cert.certificateId}.pdf`);
   const qrRes = await generateQRCode(cert.certificateId);
 
   cert.filePath = filePath;
-  cert.fileHash = fileHash;
+  cert.fileHash = newHash;
   cert.ipfsCid = ipfsResult.cid || cert.ipfsCid;
   cert.ipfsGatewayUrl = ipfsResult.gatewayUrl || cert.ipfsGatewayUrl;
   cert.ipfsQrCid = qrRes.ipfsQrCid || cert.ipfsQrCid;

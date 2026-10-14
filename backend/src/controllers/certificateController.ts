@@ -60,9 +60,27 @@ export const handleCreateCertificate = async (
       certificate: result.certificate,
       qrDataUrl: result.qrDataUrl,
     });
-  } catch (error) {
+  } catch (error: any) {
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
+    }
+    // Convert MongoDB duplicate-key errors (concurrent race past pre-check) to HTTP 409
+    if (error?.code === 11000 || error?.name === 'MongoServerError') {
+      const keyPattern = error?.keyPattern || {};
+      if (keyPattern.fileHash) {
+        return next({
+          statusCode: 409,
+          message: 'This exact certificate PDF has already been registered.',
+        });
+      }
+      if (keyPattern.institutionId || keyPattern.recipientEmail || keyPattern.eventName) {
+        return next({
+          statusCode: 409,
+          message:
+            'A certificate for this recipient, event, date, type, and department has already been issued by this institution. ' +
+            'Concurrent duplicate issuance rejected.',
+        });
+      }
     }
     next(error);
   }
