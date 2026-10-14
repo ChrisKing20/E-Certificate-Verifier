@@ -7,7 +7,7 @@ import {
   updateCertificateBlockchainMetadata,
 } from '../services/certificateService';
 import { AuthRequest } from '../types';
-import fs from 'fs';
+import { sanitizeFilename, validatePdfMagicBytes } from '../middleware/uploadMiddleware';
 
 export const handleCreateCertificate = async (
   req: Request,
@@ -19,7 +19,7 @@ export const handleCreateCertificate = async (
     const { recipientName, recipientEmail, eventName, eventDate, department, certificateType } = req.body;
     const user = authReq.user || authReq.admin;
 
-    if (!req.file) {
+    if (!req.file || !req.file.buffer) {
       res.status(400).json({
         success: false,
         message: 'Certificate PDF document file is required.',
@@ -28,9 +28,6 @@ export const handleCreateCertificate = async (
     }
 
     if (!recipientName || !recipientEmail || !eventName || !eventDate) {
-      if (req.file.path && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       res.status(400).json({
         success: false,
         message: 'Required fields missing: recipientName, recipientEmail, eventName, and eventDate are required.',
@@ -38,8 +35,18 @@ export const handleCreateCertificate = async (
       return;
     }
 
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const relativePath = `uploads/${req.file.filename}`;
+    const fileBuffer = req.file.buffer;
+
+    if (!validatePdfMagicBytes(fileBuffer)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid file signature. Uploaded file is not a valid PDF document.',
+      });
+      return;
+    }
+
+    const safeFilename = sanitizeFilename(req.file.originalname || 'certificate.pdf');
+    const relativePath = `ipfs://${safeFilename}`;
 
     const result = await createCertificate({
       recipientName,
@@ -61,9 +68,6 @@ export const handleCreateCertificate = async (
       qrDataUrl: result.qrDataUrl,
     });
   } catch (error: any) {
-    if (req.file?.path && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     // Convert MongoDB duplicate-key errors (concurrent race past pre-check) to HTTP 409
     if (error?.code === 11000 || error?.name === 'MongoServerError') {
       const keyPattern = error?.keyPattern || {};

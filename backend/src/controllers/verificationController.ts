@@ -4,7 +4,6 @@ import {
   verifyByPdfHash,
   getVerificationLogs,
 } from '../services/verificationService';
-import fs from 'fs';
 import { validatePdfMagicBytes } from '../middleware/uploadMiddleware';
 
 export const handleVerifyByNumber = async (
@@ -31,7 +30,7 @@ export const handleVerifyByPdf = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.file) {
+    if (!req.file || !req.file.buffer) {
       res.status(400).json({
         success: false,
         status: 'INVALID',
@@ -42,12 +41,9 @@ export const handleVerifyByPdf = async (
 
     const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
     const userAgent = req.headers['user-agent'] || 'Unknown';
-    const fileBuffer = fs.readFileSync(req.file.path);
+    const fileBuffer = req.file.buffer;
 
     if (!validatePdfMagicBytes(fileBuffer)) {
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       res.status(400).json({
         success: false,
         status: 'INVALID',
@@ -56,17 +52,10 @@ export const handleVerifyByPdf = async (
       return;
     }
 
-    if (fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
     const result = await verifyByPdfHash(fileBuffer, ipAddress, userAgent);
 
     res.status(200).json(result);
   } catch (error) {
-    if (req.file?.path && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     next(error);
   }
 };
