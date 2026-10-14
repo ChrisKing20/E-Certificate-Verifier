@@ -46,7 +46,7 @@ import { useAuth } from '../context/AuthContext';
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
 
   const activePath = location.pathname;
 
@@ -176,7 +176,9 @@ export const AdminDashboardPage: React.FC = () => {
     navigate('/');
   };
 
-  const adminEmail = sessionStorage.getItem('ecv_admin_email') || 'admin@ecertificate.local';
+  // Derive display info from AuthContext — never fall back to hardcoded placeholder
+  const adminEmail = authUser?.email || sessionStorage.getItem('ecv_admin_email') || '';
+  const adminName = authUser?.name || sessionStorage.getItem('ecv_admin_name') || '';
 
   // Handle Issue Form Submit
   const handleIssueCertificateSubmit = async (e: React.FormEvent) => {
@@ -264,7 +266,12 @@ export const AdminDashboardPage: React.FC = () => {
               <span className="px-3 py-1 rounded-full bg-[#F59E0B]/10 text-[#F59E0B] font-bold text-xs border border-[#F59E0B]/30">
                 Institutional Admin Workspace
               </span>
-              <span className="text-xs text-secondary-text font-mono">{adminEmail}</span>
+              {adminName && (
+                <span className="text-xs font-semibold text-heading">{adminName}</span>
+              )}
+              {adminEmail && (
+                <span className="text-xs text-secondary-text font-mono">{adminEmail}</span>
+              )}
             </div>
             <h1 className="text-3xl font-extrabold text-heading font-display">
               {getPageTitle()}
