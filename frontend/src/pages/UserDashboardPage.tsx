@@ -2,15 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getUserCertificatesApi } from '../services/userApi';
 import { Certificate } from '../types/certificate';
-import { ShieldCheck, Award, ExternalLink, Calendar, CheckCircle2, XCircle, HardDrive, Cpu, QrCode, Search, FileText } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShieldCheck, Award, ExternalLink, Calendar, CheckCircle2, XCircle, HardDrive, Cpu, QrCode, Search, FileText, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const UserDashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login'); // change to your login route if different
+  };
 
   useEffect(() => {
     const fetchCertificates = async () => {
@@ -60,7 +66,7 @@ export const UserDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4 w-full md:w-auto relative z-10">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10">
             <div className="bg-[#0A192F] px-5 py-3 rounded-xl border border-slate-800 text-center flex-1 md:flex-initial">
               <span className="block text-xs font-semibold text-slate-400 uppercase">Issued Credentials</span>
               <span className="text-2xl font-extrabold text-cyan-400">{certificates.length}</span>
@@ -71,6 +77,12 @@ export const UserDashboardPage: React.FC = () => {
             >
               <ShieldCheck className="w-4 h-4 mr-2 text-cyan-400" /> Verify External Certificate
             </Link>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold flex items-center justify-center transition-all border border-red-500/30"
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Log Out
+            </button>
           </div>
         </div>
 
