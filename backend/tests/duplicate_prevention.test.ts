@@ -8,6 +8,7 @@
  */
 
 import crypto from 'crypto';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 jest.setTimeout(30000);
 
@@ -26,37 +27,61 @@ const sha256 = (buf: Buffer) =>
 // ---------------------------------------------------------------------------
 
 jest.mock('../src/services/ipfsService', () => ({
-  uploadCertificateToIPFS: jest.fn().mockResolvedValue({
-    cid: 'QmTestCID123',
-    gatewayUrl: 'https://gateway.pinata.cloud/ipfs/QmTestCID123',
-    pinned: true,
-  }),
-  removeLocalTemporaryFile: jest.fn().mockResolvedValue(undefined),
+  uploadCertificateToIPFS: jest
+    .fn<() => Promise<{ cid: string; gatewayUrl: string; pinned: boolean }>>()
+    .mockResolvedValue({
+      cid: 'QmTestCID123',
+      gatewayUrl: 'https://gateway.pinata.cloud/ipfs/QmTestCID123',
+      pinned: true,
+    }),
+  removeLocalTemporaryFile: jest
+    .fn<() => Promise<void>>()
+    .mockResolvedValue(undefined),
 }));
 
 jest.mock('../src/services/qrService', () => ({
-  generateQRCode: jest.fn().mockResolvedValue({
-    qrDataUrl: 'data:image/png;base64,abc',
-    qrFilePath: '/tmp/qr-test.png',
-    ipfsQrCid: 'QmQrCID',
-    ipfsQrGatewayUrl: 'https://gateway.pinata.cloud/ipfs/QmQrCID',
-  }),
+  generateQRCode: jest
+    .fn<
+      () => Promise<{
+        qrDataUrl: string;
+        qrFilePath: string;
+        ipfsQrCid: string;
+        ipfsQrGatewayUrl: string;
+      }>
+    >()
+    .mockResolvedValue({
+      qrDataUrl: 'data:image/png;base64,abc',
+      qrFilePath: '/tmp/qr-test.png',
+      ipfsQrCid: 'QmQrCID',
+      ipfsQrGatewayUrl: 'https://gateway.pinata.cloud/ipfs/QmQrCID',
+    }),
 }));
 
 jest.mock('../src/services/blockchainService', () => ({
-  verifyCertificateOnChain: jest.fn().mockResolvedValue({
-    isRegisteredOnChain: false,
-    onChainHashMatches: false,
-    isRevokedOnChain: false,
-  }),
+  verifyCertificateOnChain: jest
+    .fn<
+      () => Promise<{
+        isRegisteredOnChain: boolean;
+        onChainHashMatches: boolean;
+        isRevokedOnChain: boolean;
+      }>
+    >()
+    .mockResolvedValue({
+      isRegisteredOnChain: false,
+      onChainHashMatches: false,
+      isRevokedOnChain: false,
+    }),
 }));
 
-let certIdCounter = 1000;
+// NOTE: variables referenced inside jest.mock factories must start with "mock"
+let mockCertIdCounter = 1000;
 jest.mock('../src/utils/generateCertificateId', () => ({
-  generateCertificateId: jest.fn().mockImplementation(async () => {
-    certIdCounter++;
-    return `ECV-2026-${String(certIdCounter).padStart(6, '0')}`;
-  }),
+  generateCertificateId: jest
+    .fn<() => Promise<string>>()
+    .mockImplementation(async () => {
+      mockCertIdCounter++;
+      return `ECV-2026-${String(mockCertIdCounter).padStart(6, '0')}`;
+    }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -91,20 +116,22 @@ type CertDoc = {
 let certStore: CertDoc[] = [];
 
 const buildFindOne = () => async (filter: any) => {
-  return certStore.find((c) => {
-    if (filter.fileHash !== undefined && c.fileHash !== filter.fileHash) return false;
-    if (filter.certificateId !== undefined) {
-      if (typeof filter.certificateId === 'string' && c.certificateId !== filter.certificateId) return false;
-      if (filter.certificateId.$ne !== undefined && c.certificateId === filter.certificateId.$ne) return false;
-    }
-    if (filter.institutionId !== undefined && c.institutionId !== filter.institutionId) return false;
-    if (filter.recipientEmail !== undefined && c.recipientEmail !== filter.recipientEmail) return false;
-    if (filter.eventName !== undefined && c.eventName !== filter.eventName) return false;
-    if (filter.eventDate !== undefined && c.eventDate !== filter.eventDate) return false;
-    if ('certificateType' in filter && c.certificateType !== filter.certificateType) return false;
-    if ('department' in filter && c.department !== filter.department) return false;
-    return true;
-  }) || null;
+  return (
+    certStore.find((c) => {
+      if (filter.fileHash !== undefined && c.fileHash !== filter.fileHash) return false;
+      if (filter.certificateId !== undefined) {
+        if (typeof filter.certificateId === 'string' && c.certificateId !== filter.certificateId) return false;
+        if (filter.certificateId.$ne !== undefined && c.certificateId === filter.certificateId.$ne) return false;
+      }
+      if (filter.institutionId !== undefined && c.institutionId !== filter.institutionId) return false;
+      if (filter.recipientEmail !== undefined && c.recipientEmail !== filter.recipientEmail) return false;
+      if (filter.eventName !== undefined && c.eventName !== filter.eventName) return false;
+      if (filter.eventDate !== undefined && c.eventDate !== filter.eventDate) return false;
+      if ('certificateType' in filter && c.certificateType !== filter.certificateType) return false;
+      if ('department' in filter && c.department !== filter.department) return false;
+      return true;
+    }) || null
+  );
 };
 
 const buildCreate = () => async (data: any) => {
@@ -126,14 +153,16 @@ const buildCreate = () => async (data: any) => {
 };
 
 jest.mock('../src/models/Certificate', () => {
-  const actual = jest.requireActual('../src/models/Certificate');
+  const actual = jest.requireActual<typeof import('../src/models/Certificate')>(
+    '../src/models/Certificate',
+  );
   return {
     ...actual,
     Certificate: {
       findOne: jest.fn(),
       create: jest.fn(),
-      countDocuments: jest.fn().mockResolvedValue(0),
-      find: jest.fn().mockResolvedValue([]),
+      countDocuments: jest.fn<() => Promise<number>>().mockResolvedValue(0),
+      find: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([]),
     },
     __esModule: true,
   };
@@ -141,16 +170,18 @@ jest.mock('../src/models/Certificate', () => {
 
 jest.mock('../src/models/User', () => ({
   User: {
-    findOne: jest.fn().mockResolvedValue(null),
-    findById: jest.fn().mockResolvedValue(null),
+    findOne: jest.fn<() => Promise<null>>().mockResolvedValue(null),
+    findById: jest.fn<() => Promise<null>>().mockResolvedValue(null),
   },
 }));
 
 jest.mock('../src/models/VerificationLog', () => ({
   VerificationLog: {
-    create: jest.fn().mockResolvedValue({}),
-    countDocuments: jest.fn().mockResolvedValue(0),
-    find: jest.fn().mockReturnValue({ sort: () => ({ skip: () => ({ limit: () => [] }) }) }),
+    create: jest.fn<() => Promise<object>>().mockResolvedValue({}),
+    countDocuments: jest.fn<() => Promise<number>>().mockResolvedValue(0),
+    find: jest
+      .fn()
+      .mockReturnValue({ sort: () => ({ skip: () => ({ limit: () => [] }) }) }),
   },
 }));
 
@@ -208,9 +239,23 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
       onChainHashMatches: false,
       isRevokedOnChain: false,
     });
-    require('../src/utils/generateCertificateId').generateCertificateId.mockImplementation(async () => {
-      certIdCounter++;
-      return `ECV-2026-${String(certIdCounter).padStart(6, '0')}`;
+    require('../src/utils/generateCertificateId').generateCertificateId.mockImplementation(
+      async () => {
+        mockCertIdCounter++;
+        return `ECV-2026-${String(mockCertIdCounter).padStart(6, '0')}`;
+      },
+    );
+
+    // Re-seed remaining mocks (needed when jest.config has resetMocks/restoreMocks: true)
+    const { User } = require('../src/models/User');
+    User.findOne.mockResolvedValue(null);
+    User.findById.mockResolvedValue(null);
+
+    const { VerificationLog } = require('../src/models/VerificationLog');
+    VerificationLog.create.mockResolvedValue({});
+    VerificationLog.countDocuments.mockResolvedValue(0);
+    VerificationLog.find.mockReturnValue({
+      sort: () => ({ skip: () => ({ limit: () => [] }) }),
     });
   });
 
@@ -234,7 +279,7 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
           fileBuffer: pdfBuf,
           filePath: 'uploads/cert-a-dup.pdf',
           institutionId: INST_A,
-        })
+        }),
       ).rejects.toMatchObject({ statusCode: 409 });
     });
 
@@ -249,6 +294,7 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
       });
       const origId = first.certificate.certificateId;
 
+      let caught: any;
       try {
         await createCertificate({
           ...baseCertData,
@@ -257,11 +303,13 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
           filePath: 'uploads/cert-a2-dup.pdf',
           institutionId: INST_A,
         });
-        fail('should have thrown');
-      } catch (err: any) {
-        expect(err.statusCode).toBe(409);
-        expect(err.message).toContain(origId);
+      } catch (err) {
+        caught = err;
       }
+
+      expect(caught).toBeDefined();
+      expect(caught.statusCode).toBe(409);
+      expect(caught.message).toContain(origId);
     });
   });
 
@@ -288,7 +336,7 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
           fileBuffer: tamperedPdf,
           filePath: 'uploads/cert-b-tampered.pdf',
           institutionId: INST_A,
-        })
+        }),
       ).rejects.toMatchObject({ statusCode: 409 });
     });
 
@@ -304,6 +352,7 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
         institutionId: INST_A,
       });
 
+      let caught: any;
       try {
         await createCertificate({
           ...baseCertData,
@@ -312,11 +361,15 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
           filePath: 'uploads/cert-b2-tampered.pdf',
           institutionId: INST_A,
         });
-        fail('should have thrown');
-      } catch (err: any) {
-        expect(err.statusCode).toBe(409);
-        expect(err.message.toLowerCase()).toMatch(/already been issued|logical|tamper|reissuance/i);
+      } catch (err) {
+        caught = err;
       }
+
+      expect(caught).toBeDefined();
+      expect(caught.statusCode).toBe(409);
+      expect(String(caught.message).toLowerCase()).toMatch(
+        /already been issued|logical|tamper|reissuance/i,
+      );
     });
   });
 
@@ -440,7 +493,7 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
           fileBuffer: pdf2,
           filePath: 'uploads/f-cert2.pdf',
           institutionId: INST_A,
-        })
+        }),
       ).rejects.toMatchObject({ statusCode: 409 });
     });
   });
@@ -489,7 +542,7 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
           fileBuffer: sharedPdf,
           filePath: 'uploads/g-certB2.pdf',
           institutionId: INST_B,
-        })
+        }),
       ).rejects.toMatchObject({ statusCode: 409 });
     });
   });
@@ -529,18 +582,33 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
        * 1. The E11000 error produced by MongoDB is correctly mapped to HTTP 409.
        * 2. The errorHandler and controller both handle code=11000 errors.
        */
-      const fileHashError = Object.assign(new Error('E11000 duplicate key error collection: certs.certificates index: fileHash'), {
-        code: 11000,
-        name: 'MongoServerError',
-        keyPattern: { fileHash: 1 },
-      });
+      const fileHashError = Object.assign(
+        new Error('E11000 duplicate key error collection: certs.certificates index: fileHash'),
+        {
+          code: 11000,
+          name: 'MongoServerError',
+          keyPattern: { fileHash: 1 },
+        },
+      );
       expect(fileHashError.code).toBe(11000);
 
-      const logicalError = Object.assign(new Error('E11000 duplicate key error collection: certs.certificates index: logical_duplicate_prevention'), {
-        code: 11000,
-        name: 'MongoServerError',
-        keyPattern: { institutionId: 1, recipientEmail: 1, eventName: 1, eventDate: 1, certificateType: 1, department: 1 },
-      });
+      const logicalError = Object.assign(
+        new Error(
+          'E11000 duplicate key error collection: certs.certificates index: logical_duplicate_prevention',
+        ),
+        {
+          code: 11000,
+          name: 'MongoServerError',
+          keyPattern: {
+            institutionId: 1,
+            recipientEmail: 1,
+            eventName: 1,
+            eventDate: 1,
+            certificateType: 1,
+            department: 1,
+          },
+        },
+      );
       expect(logicalError.code).toBe(11000);
 
       // Verify controller catch block maps both to 409
@@ -663,4 +731,3 @@ describe('Duplicate & Tampered Certificate Prevention', () => {
     });
   });
 });
-
